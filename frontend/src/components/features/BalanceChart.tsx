@@ -1,10 +1,5 @@
 import { useMemo } from "react";
-
-interface BalanceRecord {
-  datetime: string; // Formato YYYY-MM-DDTHH:MM:SS
-  type: 'Generacion' | 'Demanda' | string;
-  value: number; // Valor en MWh o similar
-}
+import type { BalanceRecord } from "../../types/balance";
 
 /** Define la estructura de los datos agrupados para el gráfico. */
 interface ChartDataPoint {

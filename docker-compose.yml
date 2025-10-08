@@ -6,10 +6,11 @@ services:
     ports:
       - "5173:5173"
     container_name: electric-frontend
-    command: pnpm vite dev --host
+    command: pnpm run dev --host
     environment:
       - PORT=5173
       - NODE_ENV=development
+      - VITE_API_BASE_URL=http://backend:3000/api/v1/balance
     depends_on:
       - backend
 

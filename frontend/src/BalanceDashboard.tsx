@@ -9,9 +9,8 @@ import { BalanceChart } from './components/features/BalanceChart';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Configuración robusta para el manejo de la API (Fase 3.2)
       refetchOnWindowFocus: false,
-      retry: 3, // Intentar hasta 3 veces en caso de fallo
+      retry: 1, // Intentar hasta 3 veces en caso de fallo
     },
   },
 });
