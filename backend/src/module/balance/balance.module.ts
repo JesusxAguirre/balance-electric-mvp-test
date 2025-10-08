@@ -3,10 +3,12 @@ import { BalanceService } from './balance.service';
 import { BalanceController } from './balance.controller';
 import { DatabaseModule } from 'src/database/database.module';
 import { balanceProviders } from './balance.providers';
+import { BalanceCronService } from './balance.cron.service';
 
 @Module({
   imports: [DatabaseModule],
   controllers: [BalanceController],
-  providers: [...balanceProviders, BalanceService],
+  providers: [...balanceProviders, BalanceService, BalanceCronService],
 })
 export class BalanceModule {}
+

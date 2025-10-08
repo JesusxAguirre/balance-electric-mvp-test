@@ -7,13 +7,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CreateBalanceDto } from './dto/create-balance.dto';
-import { UpdateBalanceDto } from './dto/update-balance.dto';
 import { BalanceRepository } from './balance.repository';
 import { plainToInstance } from 'class-transformer';
 import { validate, ValidationError } from 'class-validator';
-import axios, { all } from 'axios';
+import axios from 'axios';
 import { env } from 'src/config/env';
 import { ElectricBalanceApiResponseDto } from './dto/api-response.dto';
+import { formatValidationErrors } from 'src/utils/utils';
+import { Balance } from './entities/balance.entity';
 
 @Injectable()
 export class BalanceService {
@@ -24,146 +25,133 @@ export class BalanceService {
 
   async refreshData(startDate: string, endDate: string) {
     try {
-      // Fetch data from external API
-      const response = await axios.get(
-        `${env.API_URL}?start_date=${startDate}&end_date=${endDate}&time_trunc=day`,
-        {
-          responseType: 'json',
-        },
-      );
-
-      // Validate API response structure
-      const apiResponse = plainToInstance(
-        ElectricBalanceApiResponseDto,
-        response.data,
-      );
-      const apiValidationErrors = await validate(apiResponse);
-
-      if (apiValidationErrors.length > 0) {
-        throw new BadRequestException({
-          message: 'Invalid API response structure',
-          errors: this.formatValidationErrors(apiValidationErrors),
-        });
-      }
-
-      // Parse nested structure and flatten to balance entries
-      const balances: any[] = [];
-
-      for (const included of apiResponse.included) {
-        const groupType = included.type; // e.g., "Renovable"
-
-        for (const content of included.attributes.content) {
-          const subtype = content.type; // e.g., "Hidráulica"
-          const description = content.attributes.description;
-
-          // Each value entry becomes a separate balance record
-          for (const valueEntry of content.attributes.values) {
-            balances.push({
-              type: groupType,
-              subtype: subtype,
-              value: valueEntry.value,
-              percentage: valueEntry.percentage,
-              description: description,
-              date: valueEntry.datetime,
-            });
-          }
-        }
-      }
-
-      // Transform and validate DTOs (transformers will convert Spanish names to enums)
-      const instances = plainToInstance(CreateBalanceDto, balances, {
-        enableImplicitConversion: true,
-      });
-
-      // Validate each instance
-      const allValidationErrors: ValidationError[] = [];
-      for (let i = 0; i < instances.length; i++) {
-        const errors = await validate(instances[i], {
-          whitelist: true,
-          forbidNonWhitelisted: true,
-        });
-        if (errors.length > 0) {
-          allValidationErrors.push(
-            ...errors.map((err) => {
-              err.property = `[${i}].${err.property}`;
-              return err;
-            }),
-          );
-        }
-      }
-
-      if (allValidationErrors.length > 0) {
-        throw new BadRequestException({
-          message: this.formatValidationErrors(allValidationErrors),
-        });
-      }
-
-      const entities = instances.map((dto) =>
-        this.balanceRepository.create(dto),
-      );
-      await this.balanceRepository.save(entities);
+      const apiResponse = await this._fetchAndValidateApiData(startDate, endDate);
+      const balanceDtos = await this._transformAndValidateData(apiResponse);
+      const savedEntities = await this._saveBalances(balanceDtos);
 
       return {
         message: 'Balances saved successfully',
-        count: entities.length,
+        count: savedEntities.length,
         dateRange: { startDate, endDate },
       };
     } catch (error) {
-      // Re-throw BadRequestException with validation errors
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-
-      // Handle axios errors
-      if (axios.isAxiosError(error)) {
-        console.log('go here');
-        console.log(error);
-        throw new HttpException(
-          {
-            message: 'Failed to fetch data from REE Api please try later',
-            details: error.message,
-            statusCode: error.response?.status,
-          },
-          HttpStatus.BAD_GATEWAY,
-        );
-      }
-
-      // Handle database errors
-      if (error.code === '23505') {
-        // PostgreSQL unique violation
-        throw new HttpException(
-          {
-            message: 'Duplicate balance entries detected',
-            details:
-              'Some balance records already exist for the given date range',
-          },
-          HttpStatus.CONFLICT,
-        );
-      }
-
-      // Generic error handler
-      throw new HttpException(
-        {
-          message: 'Error processing balance data',
-          details: error.message,
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this._handleRefreshError(error);
     }
   }
 
-  /**
-   * Format validation errors into a readable structure
-   */
-  private formatValidationErrors(errors: ValidationError[]): any[] {
-    return errors.map((error) => ({
-      property: error.property,
-      value: error.value,
-      constraints: error.constraints,
-      children: error.children?.length
-        ? this.formatValidationErrors(error.children)
-        : undefined,
-    }));
+  private async _fetchAndValidateApiData(
+    startDate: string,
+    endDate: string,
+  ): Promise<ElectricBalanceApiResponseDto> {
+    const response = await axios.get(
+      `${env.API_URL}?start_date=${startDate}&end_date=${endDate}&time_trunc=day`,
+      {
+        responseType: 'json',
+      },
+    );
+
+    const apiResponse = plainToInstance(
+      ElectricBalanceApiResponseDto,
+      response.data,
+    );
+    const errors = await validate(apiResponse);
+
+    if (errors.length > 0) {
+      throw new BadRequestException({
+        message: 'Invalid API response structure',
+        errors: formatValidationErrors(errors),
+      });
+    }
+
+    return apiResponse;
+  }
+
+  private async _transformAndValidateData(
+    apiResponse: ElectricBalanceApiResponseDto,
+  ): Promise<CreateBalanceDto[]> {
+    const balances: any[] = [];
+
+    for (const included of apiResponse.included) {
+      const groupType = included.type;
+      for (const content of included.attributes.content) {
+        const subtype = content.type;
+        const description = content.attributes.description;
+        for (const valueEntry of content.attributes.values) {
+          balances.push({
+            type: groupType,
+            subtype: subtype,
+            value: valueEntry.value,
+            percentage: valueEntry.percentage,
+            description: description,
+            date: valueEntry.datetime,
+          });
+        }
+      }
+    }
+
+    const instances = plainToInstance(CreateBalanceDto, balances, {
+      enableImplicitConversion: true,
+    });
+
+    const validationErrors: ValidationError[] = [];
+    for (const instance of instances) {
+      const errors = await validate(instance, {
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      });
+      if (errors.length > 0) {
+        validationErrors.push(...errors);
+      }
+    }
+
+    if (validationErrors.length > 0) {
+      throw new BadRequestException({
+        message: 'Validation failed for one or more balance entries',
+        errors: formatValidationErrors(validationErrors),
+      });
+    }
+
+    return instances;
+  }
+
+  private async _saveBalances(balanceDtos: CreateBalanceDto[]): Promise<Balance[]> {
+    const entities = balanceDtos.map((dto) => this.balanceRepository.create(dto));
+    return this.balanceRepository.save(entities);
+  }
+
+  private _handleRefreshError(error: any) {
+    if (error instanceof BadRequestException) {
+      throw error;
+    }
+
+    if (axios.isAxiosError(error)) {
+      throw new HttpException(
+        {
+          message: 'Failed to fetch data from REE Api please try later',
+          details: error.message,
+          statusCode: error.response?.status,
+        },
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
+
+    if (error.code === '23505') {
+      throw new HttpException(
+        {
+          message: 'Duplicate balance entries detected',
+          details: 'Some balance records already exist for the given date range',
+        },
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    throw new HttpException(
+      {
+        message: 'Error processing balance data',
+        details: error.message,
+      },
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
   }
 
   findAll() {
