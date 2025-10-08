@@ -89,7 +89,6 @@ export function transformToEnergyType(
   const { value } = params;
 
   if (!value || typeof value !== 'string') {
-    console.log(value);
     return undefined;
   }
 
@@ -112,7 +111,6 @@ export function transformToEnergySubtype(
   const { value } = params;
 
   if (!value || typeof value !== 'string') {
-    console.log('❌ Subtype transformer - Invalid value:', value);
     return undefined;
   }
 
@@ -123,12 +121,6 @@ export function transformToEnergySubtype(
 
   // Try as Spanish display name
   const result = getEnergySubtypeFromDisplayName(value);
-
-  if (!result) {
-    console.log('❌ Subtype NOT FOUND for Spanish name:', value);
-  } else {
-    console.log('✅ Subtype found:', value, '->', result);
-  }
 
   return result;
 }
