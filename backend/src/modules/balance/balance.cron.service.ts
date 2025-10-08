@@ -1,30 +1,45 @@
-import { Injectable } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
-import moment from 'moment';
+import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import * as moment from 'moment';
 import { BalanceService } from './balance.service';
-import { logger } from 'src/main';
+
+const logger = new Logger('Cron Service');
 
 @Injectable()
 export class BalanceCronService {
   constructor(private readonly balanceService: BalanceService) {}
 
-  @Cron('0 2 * * *') // Runs every day at 2:00 AM
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async handleCron() {
     try {
-      const yesterday = moment().subtract(1, 'days').format('YYYY-MM-DD');
+      const datePart = moment().subtract(1, 'days').format('YYYY-MM-DD');
+      logger.log(`[Cron] Refreshing data for ${datePart}`);
 
-      logger.log(`[Cron] Refreshing data for ${yesterday}`);
+      const startDate = `${datePart}T00:00`; // E.g., 2025-01-01T00:00
+      const endDate = `${datePart}T23:59`; // E.g., 2025-01-01T23:59
+      await this.balanceService.refreshData(startDate, endDate);
 
-      await this.balanceService.refreshData(yesterday, yesterday);
-
-      logger.log(`[Cron] Data refresh for ${yesterday} completed successfully`);
+      logger.log(`[Cron] Data refresh for ${datePart} completed successfully`);
     } catch (error) {
-      console.error(
-        `[Cron Error] Failed to refresh data for ${moment()
-          .subtract(1, 'days')
-          .format('YYYY-MM-DD')}`,
-        error,
-      );
+      const datePart = moment().subtract(1, 'days').format('YYYY-MM-DD');
+
+      //catch http error
+      if (error && error.response && error.status) {
+        const errorMessage =
+          error.response.message || 'Unknown HTTP error details';
+        const errorDetails = error.response.details || '';
+        const statusCode = error.status;
+
+        logger.error(
+          `[Cron Failed] HTTP Status ${statusCode} for ${datePart}: ${errorMessage}`,
+          errorDetails, // Log details on a separate line for clarity
+        );
+      } else {
+        logger.error(
+          `[Cron CRITICAL] Unexpected error refreshing data for ${datePart}`,
+          error.stack || error.message, // Log stack for debugging critical errors
+        );
+      }
     }
   }
 }

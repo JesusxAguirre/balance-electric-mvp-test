@@ -25,7 +25,10 @@ export class BalanceService {
 
   async refreshData(startDate: string, endDate: string) {
     try {
-      const apiResponse = await this._fetchAndValidateApiData(startDate, endDate);
+      const apiResponse = await this._fetchAndValidateApiData(
+        startDate,
+        endDate,
+      );
       const balanceDtos = await this._transformAndValidateData(apiResponse);
       const savedEntities = await this._saveBalances(balanceDtos);
 
@@ -114,8 +117,12 @@ export class BalanceService {
     return instances;
   }
 
-  private async _saveBalances(balanceDtos: CreateBalanceDto[]): Promise<Balance[]> {
-    const entities = balanceDtos.map((dto) => this.balanceRepository.create(dto));
+  private async _saveBalances(
+    balanceDtos: CreateBalanceDto[],
+  ): Promise<Balance[]> {
+    const entities = balanceDtos.map((dto) =>
+      this.balanceRepository.create(dto),
+    );
     return this.balanceRepository.save(entities);
   }
 
@@ -125,6 +132,7 @@ export class BalanceService {
     }
 
     if (axios.isAxiosError(error)) {
+      console.log(error);
       throw new HttpException(
         {
           message: 'Failed to fetch data from REE Api please try later',
@@ -139,7 +147,8 @@ export class BalanceService {
       throw new HttpException(
         {
           message: 'Duplicate balance entries detected',
-          details: 'Some balance records already exist for the given date range',
+          details:
+            'Some balance records already exist for the given date range',
         },
         HttpStatus.CONFLICT,
       );

@@ -12,9 +12,9 @@ import {
 import { AllExceptionsFilter } from './core/exceptions/exception.filter';
 import { globalValidationExceptionFactory } from './core/exceptions/exception.factory';
 
-export const logger = new Logger('Electric Backend');
-
 async function bootstrap() {
+  const logger = new Logger('Electric Backend');
+
   initializeTransactionalContext({
     storageDriver: StorageDriver.ASYNC_LOCAL_STORAGE,
   });
