@@ -4,21 +4,30 @@ import helmet from 'helmet';
 import { ValidationPipe } from '@nestjs/common';
 import { env } from './config/env';
 import { Logger } from '@nestjs/common';
-import { AllExceptionsFilter } from './exceptions/exception.filter';
-import { globalValidationExceptionFactory } from './exceptions/exception.factory';
+
+import {
+  initializeTransactionalContext,
+  StorageDriver,
+} from 'typeorm-transactional';
+import { AllExceptionsFilter } from './core/exceptions/exception.filter';
+import { globalValidationExceptionFactory } from './core/exceptions/exception.factory';
 
 async function bootstrap() {
-  const logger = new Logger('Electric Backend')
+  const logger = new Logger('Electric Backend');
 
-  // initializeTransactionalContext({ storageDriver: StorageDriver.ASYNC_LOCAL_STORAGE });
+  initializeTransactionalContext({
+    storageDriver: StorageDriver.ASYNC_LOCAL_STORAGE,
+  });
 
   // Factory method NestJs Create app
   const app = await NestFactory.create(AppModule, { cors: true });
 
   // Protect the api
-  app.use(helmet({ 
-    crossOriginResourcePolicy: { policy: 'cross-origin' },
-  }));
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
 
   // Set global prefix for all routes
   app.setGlobalPrefix('api/v1');
@@ -31,10 +40,9 @@ async function bootstrap() {
       transform: true,
       exceptionFactory: globalValidationExceptionFactory,
     }),
-  )
+  );
 
   logger.log(`Elecric backend running on port ${env.PORT}`);
   await app.listen(env.PORT);
-
 }
 bootstrap();
