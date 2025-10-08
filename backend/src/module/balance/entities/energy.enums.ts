@@ -6,7 +6,7 @@ export enum EnergyType {
   RENEWABLE = 'RENEWABLE',
   NON_RENEWABLE = 'NON_RENEWABLE',
   STORAGE = 'STORAGE',
-  DEMAND = 'DEMAND'
+  DEMAND = 'DEMAND',
 }
 
 /**
@@ -25,9 +25,15 @@ export enum EnergySubtype {
   RENEWABLE_GENERATION = 'RENEWABLE_GENERATION',
 
   // Non-Renewable subtypes
+  NUCLEAR = 'NUCLEAR',
+  COMBINED_CYCLE = 'COMBINED_CYCLE',
+  CARBON = 'CARBON',
+  DIESEL_ENGINE = 'DIESEL_ENGINE',
   GAS_TURBINE = 'GAS_TURBINE',
   STEAM_TURBINE = 'STEAM_TURBINE',
   COGENERATION = 'COGENERATION',
+  NON_RENEWABLE_WASTE = 'NON_RENEWABLE_WASTE',
+  NON_RENEWABLE_GENERATION = 'NON_RENEWABLE_GENERATION',
 
   // Storage subtypes
   PUMPING_TURBINE = 'PUMPING_TURBINE',
@@ -35,7 +41,8 @@ export enum EnergySubtype {
   STORAGE_BALANCE = 'STORAGE_BALANCE',
 
   // Demand subtypes
-  INTERNATIONAL_BALANCE = 'INTERNATIONAL_BALANCE'
+  INTERNATIONAL_BALANCE = 'INTERNATIONAL_BALANCE',
+  BC_DEMAND = 'BC_DEMAND',
 }
 
 /**
@@ -45,13 +52,14 @@ export const EnergyTypeDisplayNames: Record<EnergyType, string> = {
   [EnergyType.RENEWABLE]: 'Renovable',
   [EnergyType.NON_RENEWABLE]: 'No-Renovable',
   [EnergyType.STORAGE]: 'Almacenamiento',
-  [EnergyType.DEMAND]: 'Demanda'
+  [EnergyType.DEMAND]: 'Demanda',
 };
 
 /**
  * Spanish display names for energy subtypes
  */
 export const EnergySubtypeDisplayNames: Record<EnergySubtype, string> = {
+  //RENEWABLE
   [EnergySubtype.HYDRAULIC]: 'Hidráulica',
   [EnergySubtype.WIND]: 'Eólica',
   [EnergySubtype.SOLAR_PHOTOVOLTAIC]: 'Solar fotovoltaica',
@@ -60,13 +68,25 @@ export const EnergySubtypeDisplayNames: Record<EnergySubtype, string> = {
   [EnergySubtype.OTHER_RENEWABLES]: 'Otras renovables',
   [EnergySubtype.RENEWABLE_WASTE]: 'Residuos renovables',
   [EnergySubtype.RENEWABLE_GENERATION]: 'Generación renovable',
+  //NON RENEWABLE
+  [EnergySubtype.NUCLEAR]: 'Nuclear',
+  [EnergySubtype.COMBINED_CYCLE]: 'Ciclo combinado',
+  [EnergySubtype.CARBON]: 'Carbón',
+  [EnergySubtype.DIESEL_ENGINE]: 'Motores diésel',
   [EnergySubtype.GAS_TURBINE]: 'Turbina de gas',
   [EnergySubtype.STEAM_TURBINE]: 'Turbina de vapor',
   [EnergySubtype.COGENERATION]: 'Cogeneración',
+  [EnergySubtype.NON_RENEWABLE_WASTE]: 'Residuos no renovables',
+  [EnergySubtype.NON_RENEWABLE_GENERATION]: 'Generación no renovable',
+
+  //Storage
   [EnergySubtype.PUMPING_TURBINE]: 'Turbinación bombeo',
   [EnergySubtype.PUMPING_CONSUMPTION]: 'Consumo bombeo',
   [EnergySubtype.STORAGE_BALANCE]: 'Saldo almacenamiento',
-  [EnergySubtype.INTERNATIONAL_BALANCE]: 'Saldo I. internacionales'
+
+  //Demand
+  [EnergySubtype.INTERNATIONAL_BALANCE]: 'Saldo I. internacionales',
+  [EnergySubtype.BC_DEMAND]: 'Demanda en b.c.',
 };
 
 /**
@@ -92,9 +112,11 @@ export function getEnergySubtypeDisplayName(subtype: EnergySubtype): string {
  * @param displayName - The Spanish display name
  * @returns The energy type enum value or undefined if not found
  */
-export function getEnergyTypeFromDisplayName(displayName: string): EnergyType | undefined {
+export function getEnergyTypeFromDisplayName(
+  displayName: string,
+): EnergyType | undefined {
   return Object.entries(EnergyTypeDisplayNames).find(
-    ([_, name]) => name === displayName
+    ([_, name]) => name === displayName,
   )?.[0] as EnergyType | undefined;
 }
 
@@ -103,9 +125,11 @@ export function getEnergyTypeFromDisplayName(displayName: string): EnergyType | 
  * @param displayName - The Spanish display name
  * @returns The energy subtype enum value or undefined if not found
  */
-export function getEnergySubtypeFromDisplayName(displayName: string): EnergySubtype | undefined {
+export function getEnergySubtypeFromDisplayName(
+  displayName: string,
+): EnergySubtype | undefined {
   return Object.entries(EnergySubtypeDisplayNames).find(
-    ([_, name]) => name === displayName
+    ([_, name]) => name === displayName,
   )?.[0] as EnergySubtype | undefined;
 }
 
@@ -121,21 +145,28 @@ export const EnergyTypeSubtypeMapping: Record<EnergyType, EnergySubtype[]> = {
     EnergySubtype.HYDROEOLIC,
     EnergySubtype.OTHER_RENEWABLES,
     EnergySubtype.RENEWABLE_WASTE,
-    EnergySubtype.RENEWABLE_GENERATION
+    EnergySubtype.RENEWABLE_GENERATION,
   ],
   [EnergyType.NON_RENEWABLE]: [
+    EnergySubtype.NUCLEAR,
+    EnergySubtype.COMBINED_CYCLE,
+    EnergySubtype.CARBON,
+    EnergySubtype.DIESEL_ENGINE,
     EnergySubtype.GAS_TURBINE,
     EnergySubtype.STEAM_TURBINE,
-    EnergySubtype.COGENERATION
+    EnergySubtype.COGENERATION,
+    EnergySubtype.NON_RENEWABLE_WASTE,
+    EnergySubtype.NON_RENEWABLE_GENERATION,
   ],
   [EnergyType.STORAGE]: [
     EnergySubtype.PUMPING_TURBINE,
     EnergySubtype.PUMPING_CONSUMPTION,
-    EnergySubtype.STORAGE_BALANCE
+    EnergySubtype.STORAGE_BALANCE,
   ],
   [EnergyType.DEMAND]: [
-    EnergySubtype.INTERNATIONAL_BALANCE
-  ]
+    EnergySubtype.INTERNATIONAL_BALANCE,
+    EnergySubtype.BC_DEMAND,
+  ],
 };
 
 /**
@@ -143,7 +174,9 @@ export const EnergyTypeSubtypeMapping: Record<EnergyType, EnergySubtype[]> = {
  * @param subtype - The energy subtype
  * @returns The parent energy type
  */
-export function getParentEnergyType(subtype: EnergySubtype): EnergyType | undefined {
+export function getParentEnergyType(
+  subtype: EnergySubtype,
+): EnergyType | undefined {
   for (const [type, subtypes] of Object.entries(EnergyTypeSubtypeMapping)) {
     if (subtypes.includes(subtype)) {
       return type as EnergyType;
@@ -158,7 +191,10 @@ export function getParentEnergyType(subtype: EnergySubtype): EnergyType | undefi
  * @param subtype - The energy subtype
  * @returns True if the pairing is valid, false otherwise
  */
-export function isValidEnergyPair(type: EnergyType, subtype: EnergySubtype): boolean {
+export function isValidEnergyPair(
+  type: EnergyType,
+  subtype: EnergySubtype,
+): boolean {
   return EnergyTypeSubtypeMapping[type]?.includes(subtype) ?? false;
 }
 
@@ -169,47 +205,4 @@ export function isValidEnergyPair(type: EnergyType, subtype: EnergySubtype): boo
  */
 export function getValidSubtypes(type: EnergyType): EnergySubtype[] {
   return EnergyTypeSubtypeMapping[type] ?? [];
-}
-
-/**
- * Validation result interface
- */
-export interface EnergyPairValidationResult {
-  isValid: boolean;
-  error?: string;
-  expectedType?: EnergyType;
-  validSubtypes?: EnergySubtype[];
-}
-
-/**
- * Comprehensive validation with detailed error messages
- * @param type - The energy type
- * @param subtype - The energy subtype
- * @returns Validation result with detailed information
- */
-export function validateEnergyPair(
-  type: EnergyType,
-  subtype: EnergySubtype
-): EnergyPairValidationResult {
-  const validSubtypes = EnergyTypeSubtypeMapping[type];
-  
-  if (!validSubtypes) {
-    return {
-      isValid: false,
-      error: `Invalid energy type: ${type}`
-    };
-  }
-
-  if (validSubtypes.includes(subtype)) {
-    return { isValid: true };
-  }
-
-  const expectedType = getParentEnergyType(subtype);
-  
-  return {
-    isValid: false,
-    error: `Invalid pairing: ${getEnergySubtypeDisplayName(subtype)} (${subtype}) cannot belong to ${getEnergyTypeDisplayName(type)} (${type})`,
-    expectedType,
-    validSubtypes
-  };
 }

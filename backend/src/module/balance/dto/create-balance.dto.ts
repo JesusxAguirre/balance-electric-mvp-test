@@ -4,6 +4,7 @@ import {
   IsNumber,
   IsPositive,
   IsString,
+  IsDateString,
 } from 'class-validator';
 import { EnergyType, EnergySubtype } from '../entities/energy.enums';
 import { IsValidEnergyPair } from './decorators/energy-pair.decorator';
@@ -21,7 +22,9 @@ export class CreateBalanceDto {
   type: EnergyType;
 
   @Transform(transformToEnergySubtype)
-  @IsEnum(EnergySubtype, { message: 'Invalid energy subtype' })
+  @IsEnum(EnergySubtype, {
+    message: `Invalid energy subtype`,
+  })
   @IsNotEmpty()
   @IsValidEnergyPair('type', {
     message: 'Energy type and subtype are not compatible',
@@ -41,4 +44,8 @@ export class CreateBalanceDto {
   @CleanOptional()
   @IsString()
   description?: string;
+
+  @IsDateString({}, { message: 'Date must be a valid ISO 8601 date string' })
+  @IsNotEmpty()
+  date: string;
 }

@@ -32,12 +32,12 @@ export class EnergyTypeTransformer implements ValueTransformer {
    */
   from(value: string | null | undefined): EnergyType | null {
     if (!value) return null;
-    
+
     // Try to match as enum value first
     if (Object.values(EnergyType).includes(value as EnergyType)) {
       return value as EnergyType;
     }
-    
+
     // Try to match as Spanish display name
     const enumValue = getEnergyTypeFromDisplayName(value);
     return enumValue || null;
@@ -67,12 +67,12 @@ export class EnergySubtypeTransformer implements ValueTransformer {
    */
   from(value: string | null | undefined): EnergySubtype | null {
     if (!value) return null;
-    
+
     // Try to match as enum value first
     if (Object.values(EnergySubtype).includes(value as EnergySubtype)) {
       return value as EnergySubtype;
     }
-    
+
     // Try to match as Spanish display name
     const enumValue = getEnergySubtypeFromDisplayName(value);
     return enumValue || null;
@@ -83,10 +83,13 @@ export class EnergySubtypeTransformer implements ValueTransformer {
  * class-transformer function for DTO: String to EnergyType
  * Accepts both enum values and Spanish display names
  */
-export function transformToEnergyType(params: TransformFnParams): EnergyType | undefined {
+export function transformToEnergyType(
+  params: TransformFnParams,
+): EnergyType | undefined {
   const { value } = params;
-  
+
   if (!value || typeof value !== 'string') {
+    console.log(value);
     return undefined;
   }
 
@@ -103,10 +106,13 @@ export function transformToEnergyType(params: TransformFnParams): EnergyType | u
  * class-transformer function for DTO: String to EnergySubtype
  * Accepts both enum values and Spanish display names
  */
-export function transformToEnergySubtype(params: TransformFnParams): EnergySubtype | undefined {
+export function transformToEnergySubtype(
+  params: TransformFnParams,
+): EnergySubtype | undefined {
   const { value } = params;
-  
+
   if (!value || typeof value !== 'string') {
+    console.log('❌ Subtype transformer - Invalid value:', value);
     return undefined;
   }
 
@@ -116,15 +122,25 @@ export function transformToEnergySubtype(params: TransformFnParams): EnergySubty
   }
 
   // Try as Spanish display name
-  return getEnergySubtypeFromDisplayName(value);
+  const result = getEnergySubtypeFromDisplayName(value);
+
+  if (!result) {
+    console.log('❌ Subtype NOT FOUND for Spanish name:', value);
+  } else {
+    console.log('✅ Subtype found:', value, '->', result);
+  }
+
+  return result;
 }
 
 /**
  * class-transformer function for response: EnergyType to Spanish display name
  */
-export function transformEnergyTypeToDisplayName(params: TransformFnParams): string | undefined {
+export function transformEnergyTypeToDisplayName(
+  params: TransformFnParams,
+): string | undefined {
   const { value } = params;
-  
+
   if (!value) {
     return undefined;
   }
@@ -135,9 +151,11 @@ export function transformEnergyTypeToDisplayName(params: TransformFnParams): str
 /**
  * class-transformer function for response: EnergySubtype to Spanish display name
  */
-export function transformEnergySubtypeToDisplayName(params: TransformFnParams): string | undefined {
+export function transformEnergySubtypeToDisplayName(
+  params: TransformFnParams,
+): string | undefined {
   const { value } = params;
-  
+
   if (!value) {
     return undefined;
   }

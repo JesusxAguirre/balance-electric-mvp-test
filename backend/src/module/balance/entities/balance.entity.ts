@@ -3,6 +3,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { EnergySubtype, EnergyType } from './energy.enums';
@@ -12,6 +13,7 @@ import {
 } from '../transformers/energy.transformers';
 
 @Entity()
+@Index(['type', 'subtype', 'date'], { unique: true })
 export class Balance {
   @PrimaryGeneratedColumn('uuid')
   id: string;
