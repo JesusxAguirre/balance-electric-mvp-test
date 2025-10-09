@@ -1,4 +1,4 @@
-# ⚡ Balance Eléctrico - Frontend
+# ⚡ Electric Balance - Frontend
 
 Dashboard web de visualización interactiva del balance eléctrico nacional de España (datos de REE - Red Eléctrica de España).
 
