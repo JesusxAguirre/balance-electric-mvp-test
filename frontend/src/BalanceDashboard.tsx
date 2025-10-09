@@ -1,6 +1,6 @@
 // Dashboard.tsx
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Card,
@@ -12,7 +12,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { AlertCircle, RefreshCw, TrendingUp, Calendar } from "lucide-react";
+import { AlertCircle, RefreshCw, TrendingUp } from "lucide-react";
 import { BalanceChart } from "./components/features/BalanceChart";
 import { DateRangePicker } from "./components/features/DateRangePicker";
 import {
@@ -21,9 +21,8 @@ import {
   useCurrentYearByMonth,
   useCurrentYearByYear,
 } from "./api/hooks/useBalanceData";
-import { DynamicBalanceChart } from "./components/charts/dynamicChart";
-import { groupByEnergyType } from "./utils/energyTransform";
-import type { BalanceRecord, EnergyType } from "./types/energy.enums";
+import { CombinedMonthlyChart } from "./components/charts/CombinedMonthlyChart";
+import { StackedAreaChart } from "./components/charts/StackedAreaChart";
 
 // ============================================================================
 // DASHBOARD COMPONENT
@@ -36,14 +35,6 @@ const Dashboard = () => {
 
   const monthlyData = useCurrentYearByMonth(); // Simplificado
   const yearlyData = useCurrentYearByYear(); // Simplificado
-
-  const monthlyDataGrouped = useMemo(() => {
-    if (monthlyData.data) {
-      return groupByEnergyType(monthlyData.data);
-    }
-    return {};
-  }, [monthlyData.data]);
-
   const customData = useBalanceData(customRange.start, customRange.end);
 
   const handleDateChange = (start: string, end: string) => {
@@ -68,112 +59,62 @@ const Dashboard = () => {
 
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Permanent Current Year Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Monthly Chart */}
-          <Card className="shadow-lg">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <Calendar className="w-5 h-5" />
-                    Año Actual por Mes
-                  </CardTitle>
-                  <CardDescription className="mt-1">
-                    Distribución mensual del balance eléctrico
-                  </CardDescription>
-                </div>
-                {/* Nota: useQuery no tiene `isLoading` o `isError` dentro del estado devuelto, 
-                   sino que son propiedades directas. */}
-                {monthlyData.isLoading && (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              {monthlyData.isLoading ? (
+        <div className="space-y-6">
+          {/* Monthly Combined Chart */}
+          {monthlyData.isLoading ? (
+            <Card>
+              <CardContent className="pt-6">
                 <div className="space-y-3">
                   <Skeleton className="h-6 w-3/4" />
-                  <Skeleton className="h-64 w-full" />
+                  <Skeleton className="h-[400px] w-full" />
                 </div>
-              ) : monthlyData.isError ? (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>
-                    {/* useQuery usa `error` directamente */}
-                    No se pudo cargar la serie mensual:{" "}
-                    {monthlyData.error?.message}
-                  </AlertDescription>
-                </Alert>
-              ) : Object.keys(monthlyDataGrouped).length > 0 ? (
-                // 🚨 2. ITERAR SOBRE LOS GRUPOS DE DATOS Y RENDERIZAR UN GRÁFICO POR TIPO
-                <div className="grid md:grid-cols-2 gap-6">
-                  {Object.entries(monthlyDataGrouped).map(
-                    ([type, dataArray]) => (
-                      <DynamicBalanceChart
-                        key={type}
-                        // Aquí 'dataArray' es un array de registros, ¡el tipo correcto!
-                        data={
-                          dataArray as Pick<
-                            BalanceRecord,
-                            "datetime" | "value"
-                          >[]
-                        }
-                        type={type as EnergyType} // Asegurar que TypeScript sepa que es un EnergyType
-                      />
-                    )
-                  )}
-                </div>
-              ) : (
-                <div className="h-64 flex items-center justify-center text-muted-foreground">
-                  Sin datos disponibles
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ) : monthlyData.isError ? (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>
+                No se pudo cargar la serie mensual: {monthlyData.error?.message}
+              </AlertDescription>
+            </Alert>
+          ) : monthlyData.data && monthlyData.data.length > 0 ? (
+            <CombinedMonthlyChart data={monthlyData.data} />
+          ) : (
+            <Card>
+              <CardContent className="flex items-center justify-center h-[300px]">
+                <p className="text-muted-foreground">Sin datos disponibles</p>
+              </CardContent>
+            </Card>
+          )}
 
-          {/* Yearly Chart (Similar structure fix applied) */}
-          <Card className="shadow-lg">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5" />
-                    Año Actual Agregado
-                  </CardTitle>
-                  <CardDescription className="mt-1">
-                    Total anual consolidado
-                  </CardDescription>
-                </div>
-                {yearlyData.isLoading && (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              {yearlyData.isLoading ? (
+          {/* Yearly Stacked Area Chart */}
+          {yearlyData.isLoading ? (
+            <Card>
+              <CardContent className="pt-6">
                 <div className="space-y-3">
                   <Skeleton className="h-6 w-3/4" />
-                  <Skeleton className="h-64 w-full" />
+                  <Skeleton className="h-[350px] w-full" />
                 </div>
-              ) : yearlyData.isError ? (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>
-                    No se pudo cargar la serie anual:{" "}
-                    {yearlyData.error?.message}
-                  </AlertDescription>
-                </Alert>
-              ) : yearlyData.data && yearlyData.data.length > 0 ? (
-                <BalanceChart data={yearlyData.data} />
-              ) : (
-                <div className="h-64 flex items-center justify-center text-muted-foreground">
-                  Sin datos disponibles
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ) : yearlyData.isError ? (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>
+                No se pudo cargar la serie anual: {yearlyData.error?.message}
+              </AlertDescription>
+            </Alert>
+          ) : yearlyData.data && yearlyData.data.length > 0 ? (
+            <StackedAreaChart data={yearlyData.data} />
+          ) : (
+            <Card>
+              <CardContent className="flex items-center justify-center h-[300px]">
+                <p className="text-muted-foreground">Sin datos disponibles</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <Separator className="my-8" />

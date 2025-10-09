@@ -52,7 +52,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ onDateChange }
             {/* Input Fecha Inicio */}
             <div className="space-y-2">
               <Label htmlFor="start-date" className="flex items-center gap-2">
-                <CalendarIcon className="h-4 w-4" />
+                <CalendarIcon className="h-4 w-4 text-foreground" />
                 Fecha de Inicio
               </Label>
               <Input
@@ -66,7 +66,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ onDateChange }
             {/* Input Fecha Fin */}
             <div className="space-y-2">
               <Label htmlFor="end-date" className="flex items-center gap-2">
-                <CalendarIcon className="h-4 w-4" />
+                <CalendarIcon className="h-4 w-4 text-foreground" />
                 Fecha de Fin
               </Label>
               <Input
