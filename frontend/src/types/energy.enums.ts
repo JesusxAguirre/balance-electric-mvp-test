@@ -1,12 +1,3 @@
-// Assuming this is in your types file
-export interface BalanceRecord {
-  datetime: string;
-  type: EnergyType; // <-- Changed from 'Generacion' | 'Demanda' to EnergyType
-  subtype: EnergySubtype; // <-- Added subtype
-  value: number;
-}
-
-// Enums reused from backend for request/response typing
 export enum EnergyType {
   RENEWABLE = "RENEWABLE",
   NON_RENEWABLE = "NON_RENEWABLE",
@@ -221,4 +212,11 @@ export function getParentEnergyType(
     }
   }
   return undefined;
+}
+
+export interface BalanceRecord {
+  datetime: string;
+  type: EnergyType;
+  subtype: EnergySubtype;
+  value: number;
 }

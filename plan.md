@@ -1,105 +1,91 @@
-🗺️ Plan de Desarrollo Frontend: Balance Eléctrico
-Rol: Senior Tech Lead
-Proyecto: Interfaz de Consumo de Datos del Balance Eléctrico (REE)
-Tecnología: React, TypeScript, Tailwind CSS (para estética), React Query
-🎯 Objetivo de la Fase Frontend
-Construir una Single Page Application (SPA) en React/TypeScript que consuma la API REST del backend para visualizar de manera clara e interactiva los datos históricos y actuales del balance eléctrico, priorizando la experiencia de usuario (UX) y el manejo robusto de estados (carga, error, éxito).
-🛠️ Stack Tecnológico (Decisiones Clave)
-Área
-Herramienta
-Justificación
-Framework
-React + TypeScript
-Cumple el requisito. TypeScript garantiza tipado estricto y reduce errores.
-Data Fetching/Estado
-React Query (TanStack Query)
-Permite gestionar de forma declarativa el estado del servidor, incluyendo caching, re-fetching, retries y estados de isLoading/isError de forma nativa y robusta.
-Visualización
-Recharts o Chart.js
-Se prioriza Recharts por su naturaleza declarativa y facilidad de integración con React/TypeScript para gráficos de series de tiempo.
-Estilización
-Tailwind CSS
-Acelera el desarrollo y garantiza un diseño responsive y moderno sin necesidad de archivos CSS separados (Single File Mandate).
-Testing
-Jest + React Testing Library (RTL)
-Estándares de la industria para pruebas unitarias y de integración de componentes, enfocándose en el comportamiento del usuario.
+Este es un prompt detallado y con contexto dirigido a un Desarrollador Frontend para que complete la parte de React/TypeScript de la prueba técnica, asumiendo que el Backend (NestJS + Base de Datos) ya está funcional y expuesto a través de la API REST.
 
-🗓️ Fases de Implementación (Enfoque Iterativo)
-Dividimos el desarrollo del Frontend en tres fases principales:
-Fase 1: Configuración e Integración Base
-Tarea
-Objetivo
-Criterio de Éxito
-1.1. Setup del Proyecto
-Inicializar el proyecto React/TS e integrar ESLint, Prettier y Tailwind CSS.
-Entorno de desarrollo funcional y reglas de estilo aplicadas.
-1.2. Configuración de React Query
-Instalar react-query y configurar el QueryClientProvider en el componente raíz (App).
-El dev-tools de React Query se renderiza correctamente.
-1.3. Conexión Backend (Hook)
-Crear el custom hook principal (useBalanceData) para la petición a la API REST del backend (/balance).
-El hook puede obtener datos mockeados o reales (si el backend está levantado) y reportar correctamente los estados isLoading y isSuccess.
-1.4. Diseño de Tipos (Schemas)
-Definir los tipos de TypeScript (interface) para la respuesta de la API del backend, garantizando la compatibilidad.
-Tipos definidos en src/types/balance.d.ts.
+El objetivo principal es que el desarrollador frontend refactorice el código existente (si lo hay) o implemente desde cero la interfaz según los requerimientos, asegurando la calidad del código, testing, y una experiencia de usuario óptima.
 
-Fase 2: Desarrollo de la Interfaz y Visualización (Core)
-Módulo/Componente
-Descripción
-Requisito que Cumple
-2.1. Componente DateRangePicker
-Componente de entrada para seleccionar las fechas de inicio y fin, que debe validar el formato y el rango (startDate <= endDate).
-Obtener datos por rango de fechas.
-2.2. Componente BalanceChart
-Componente principal que utiliza la librería de gráficos seleccionada (Recharts). Debe ser capaz de mapear los datos crudos del backend a un formato visualizable (series de tiempo, barras, etc.).
-Representación gráfica.
-2.3. Componente Dashboard
-Componente padre de la SPA que orquesta el DateRangePicker y el BalanceChart, manejando el estado de la consulta.
-SPA, Conexión al backend.
-2.4. Mapeo de Datos para Gráfico
-Implementar la lógica de negocio para transformar los datos de la API (que pueden ser complejos) al formato simple que el componente de gráfico requiere.
-Interfaz clara y funcional.
+🚀 Technical Test – Frontend Task (React Typescript)
+Contexto de la Prueba Técnica
+El objetivo de esta prueba es construir un sistema Fullstack para visualizar el Balance Eléctrico Nacional de Red Eléctrica de España (REE).
 
-Fase 3: Calidad, Robustez y Testing
-Tarea
-Enfoque de Calidad
-Criterio de Éxito
-3.1. Manejo de Estado Loading
-Implementar skeletons o un indicador de carga visible en el Dashboard mientras useBalanceData está en isLoading.
-Cero Cumulative Layout Shift (CLS); transición suave al cargar.
-3.2. Manejo de Estado Error
-Implementar una interfaz amigable para errores de la API (ej: 500 o 404), mostrando un mensaje y una opción de retry (gracias a React Query).
-El usuario es informado claramente si la API falla.
-3.3. Pruebas Unitarias (RTL)
-Escribir pruebas para el DateRangePicker y el mapeo de datos, verificando que los tipos de datos se manejen correctamente.
-Cobertura de tests para la lógica central (mínimo 70%).
-3.4. Pruebas de Integración (RTL)
-Probar el Dashboard y BalanceChart mockeando el hook useBalanceData para simular los estados isLoading, isError y isSuccess.
-Confirmar que los componentes reaccionan visualmente a todos los estados del servidor.
+Backend (Completado): Se ha desarrollado un servicio en NestJS/TypeScript que consulta periódicamente la API pública de REE, almacena los datos históricos en una base de datos SQL (contenida en Docker), y expone la información a través de una API REST.
 
-🧩 Estructura Modular de Componentes
-Para garantizar la Arquitectura limpia y modular solicitada:
-src/
-├── api/
-│ └── hooks/
-│ └── useBalanceData.ts # Hook principal con React Query
-├── components/
-│ ├── layout/
-│ │ └── Header.tsx
-│ ├── ui/
-│ │ └── LoadingSpinner.tsx
-│ ├── features/
-│ │ ├── DateRangePicker.tsx # Control de selección de fechas
-│ │ └── BalanceChart.tsx # Componente de visualización (Recharts)
-├── pages/
-│ └── Dashboard.tsx # Componente principal SPA
-├── tests/ # Ubicación de los archivos .spec.ts / .test.tsx
-└── types/
-└── balance.d.ts # Definiciones de interfaces TypeScript
+Base de Datos: Contenerizada (por ejemplo, PostgreSQL/MySQL).
 
-✅ Criterios de Éxito del Frontend
-Conectividad: La aplicación se inicia y puede obtener datos del backend usando useBalanceData.
-Respuesta al Estado: La interfaz maneja y muestra correctamente los tres estados: Loading, Success (datos en gráfico), y Error (mensaje amigable al usuario).
-Visualización: El BalanceChart representa al menos dos series de datos clave (ej: Generación vs. Demanda) y es funcionalmente interactivo (ej: tooltips).
-Calidad del Código: Los componentes son funcionales, reutilizables, y el testing cubre los componentes críticos.
-Responsiveness: El diseño se adapta correctamente a dispositivos móviles y de escritorio (gracias a Tailwind CSS).
+Tu Tarea (Frontend): Consumir la API REST del backend para mostrar los datos de Balance Eléctrico de forma clara, interactiva y visual en una SPA de React/TypeScript. Debes asegurar una arquitectura limpia, robustez en el manejo de errores y testing exhaustivo.
+
+🎯 Objetivo Principal
+Implementar o Refactorizar la Single Page Application (SPA) con React y TypeScript para consumir los datos de la API REST del backend y presentarlos según los requisitos.
+
+🔌 API REST del Backend (Punto de Conexión)
+Tu aplicación debe consumir la API REST provista por el servicio NestJS. El endpoint principal que necesitarás es:
+
+Método Endpoint Descripción Parámetros
+GET /api/balance/date-range Obtiene el balance eléctrico nacional en un rango de fechas. ?start_date=YYYY-MM-DDTHH:mm&end_date=YYYY-MM-DDTHH:mm
+
+Exportar a Hojas de cálculo
+Recomendación: La fecha y hora deben ser manejadas en formato ISO 8601 (YYYY-MM-DDTHH:mm).
+
+Nota: Asume que el backend está corriendo en http://localhost:3000 (o el puerto configurado en el docker-compose.yml).
+
+🖥️ Requisitos Frontend (React/TypeScript)
+
+1. Arquitectura y Estructura
+   Tecnología: React + TypeScript (con Vite, Next.js, o CRA a elección).
+
+Gestión de Estado/Datos: Implementar la conexión y caché de datos usando React Query (o TanStack Query).
+
+Estructura: Código modular con una clara separación de componentes (ej: Contenedores, Presentacionales, Hooks personalizados).
+
+Tipado: Uso riguroso de TypeScript para definir las estructuras de datos de la API y los props de los componentes.
+
+2. Funcionalidad (Visualización y UX)
+   Filtro de Rango de Fechas: Implementar un selector de rango de fechas obligatorio (con hora) para que el usuario pueda consultar los datos históricos.
+
+Debe haber una validación básica para asegurar que la fecha de inicio sea anterior a la fecha de fin.
+
+Representación Gráfica:
+
+Mostrar los datos principales (ej: Generación Total vs. Demanda Total) en un gráfico de líneas o barras (usando bibliotecas como Chart.js, Recharts, o Nivo).
+
+La visualización debe ser interactiva (ej: tooltips al pasar el ratón).
+
+Visualización Tabular/Detallada: Además del gráfico, mostrar una tabla o lista con los datos clave del balance (ej: Generación de Eólica, Demanda Nacional, Saldo de Intercambios Internacionales).
+
+3. Robustez y Manejo de Errores
+   Estados de Carga (Loading): Mostrar un skeleton o un spinner apropiado mientras se espera la respuesta del backend (gestión nativa de React Query).
+
+Manejo de Errores (Error): Si la consulta falla (ej: error 400, 500, o network error), mostrar un mensaje de error claro y amigable al usuario, indicando la posibilidad de reintentar.
+
+Estado Vacío (No Data): Si la API devuelve un resultado exitoso pero sin datos para el rango seleccionado, informar al usuario de manera clara.
+
+✅ Testing Requerido
+Debes incluir pruebas significativas en tu solución Frontend (utilizando Jest, React Testing Library, o Vitest):
+
+Pruebas de Componentes: Asegurar que los componentes principales (filtros, tabla, gráfico) renderizan correctamente y responden a las interacciones del usuario.
+
+Pruebas de Lógica de Datos/Hooks: Probar los custom hooks o la lógica de manejo de datos, especialmente la integración con React Query (ej: simular estados de éxito, carga y error).
+
+🚀 Tareas de Refactorización / Implementación
+Configuración Inicial: Asegúrate de que el proyecto está configurado con React, TypeScript y la biblioteca de gráficos elegida.
+
+Capa de Datos: Implementa los custom hooks de React Query para conectar y tipar correctamente el consumo del endpoint /api/balance/date-range.
+
+Componente de Filtro: Crea un componente robusto para la selección del rango de fechas.
+
+Componente de Gráfico: Implementa la visualización gráfica de los datos de balance.
+
+Manejo de Estados: Integra los estados de isLoading, isError, y data de React Query en la UI para ofrecer una experiencia de usuario fluida.
+
+Pruebas: Escribe las pruebas unitarias y de integración para cubrir los requisitos.
+
+Criterios de Evaluación
+Se valorará especialmente:
+
+Arquitectura: Diseño de componentes limpios, reutilizables y tipados.
+
+Uso de React Query: Implementación correcta de useQuery, mutations, y opciones de caché.
+
+Robustez: Manejo impecable de estados de carga, error y reintentos.
+
+Testing: Cobertura de pruebas significativa para la capa de datos y la UI.
+
+UX/Visualización: Claridad y calidad del gráfico y la información presentada.
