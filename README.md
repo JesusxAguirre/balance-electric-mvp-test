@@ -1,5 +1,16 @@
 # balance-electric-mvp-test
 Prueba técnica de primer impacto con React y NestJS
+---
+## 📸 **Screenshots**
+
+<img width="1859" height="851" alt="image" src="https://github.com/user-attachments/assets/e2d15a42-7952-4190-8a10-5328e3533c80" />
+
+<img width="1893" height="924" alt="Captura de pantalla_20251009_153310" src="https://github.com/user-attachments/assets/879db2ce-164c-451e-8cfe-f10d4b049010" />
+
+<img width="1858" height="843" alt="image" src="https://github.com/user-attachments/assets/8911b1d7-e363-490a-a66f-3d6d0c33d4de" />
+
+<img width="942" height="676" alt="image" src="https://github.com/user-attachments/assets/8d1b51d0-4c9c-4ba1-b4f6-5a522e72afbf" />
+
 
 ## 🚀 Inicio Rápido
 
@@ -15,13 +26,9 @@ Prueba técnica de primer impacto con React y NestJS
    cd balance-electric-mvp-test
    ```
 
-2. **Configurar variables de entorno**
-   ```bash
-   cp .env.template .env
-   # Editar .env con tus valores si es necesario
    ```
 
-3. **Iniciar la aplicación con Docker Compose**
+2. **Iniciar la aplicación con Docker Compose**
    ```bash
    docker-compose up --build
    ```
@@ -34,7 +41,7 @@ Prueba técnica de primer impacto con React y NestJS
 
    **Nota:** Las migraciones de base de datos se ejecutan automáticamente al iniciar el backend. No es necesario ejecutarlas manualmente.
 
-4. **Acceder a la aplicación**
+3. **Acceder a la aplicación**
    - Frontend: http://localhost:5173
    - Backend API: http://localhost:3000
 
