@@ -126,15 +126,12 @@ export class BalanceService {
     const entities = balanceDtos.map((dto) =>
       this.balanceRepository.create(dto),
     );
-    
-    // Use upsert to handle conflicts: update existing records or insert new ones
-    // The unique constraint is on: type + subtype + date
+
     const result = await this.balanceRepository.upsert(entities, {
       conflictPaths: ['type', 'subtype', 'date'], // columns that define uniqueness
       skipUpdateIfNoValuesChanged: true, // optimization
     });
-    
-    // Return the saved/updated entities
+
     return result.generatedMaps as Balance[];
   }
 
@@ -155,8 +152,6 @@ export class BalanceService {
       );
     }
 
-    // Note: Duplicate handling removed - now using upsert which handles conflicts automatically
-    console.log(error);
     throw new HttpException(
       {
         message: 'Error processing balance data',
@@ -244,7 +239,7 @@ export class BalanceService {
     if (!time_grouping) {
       qb.orderBy('balance.date', 'ASC').addOrderBy('balance.type', 'ASC');
       const results = await qb.getMany();
-      
+
       // Categorize by type
       return this._categorizeByType(results);
     }
@@ -274,7 +269,7 @@ export class BalanceService {
     qb.groupBy(groupByColumns.join(', '));
 
     const rawResults = await qb.getRawMany();
-    
+
     // Categorize aggregated results by type
     return this._categorizeRawByType(rawResults);
   }

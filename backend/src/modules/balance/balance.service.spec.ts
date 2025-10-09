@@ -79,7 +79,11 @@ describe('BalanceService', () => {
       };
       mockedAxios.get.mockResolvedValue({ data: apiResponse });
       mockBalanceRepository.create.mockImplementation((dto) => dto as any);
-      mockBalanceRepository.save.mockResolvedValue([]);
+      mockBalanceRepository.upsert.mockResolvedValue({
+        generatedMaps: [],
+        identifiers: [],
+        raw: [],
+      });
 
       const result = await service.refreshData(
         '2023-01-01T00:00:00Z',

@@ -31,6 +31,27 @@
 $ pnpm install
 ```
 
+## Database Migrations
+
+### Automatic Migrations (Docker)
+
+When running with Docker Compose, migrations are **executed automatically** when the backend starts. You don't need to run them manually.
+
+### Manual Migrations (Local Development)
+
+If you're running locally without Docker:
+
+```bash
+# Run pending migrations
+$ pnpm run migration:run
+
+# Generate a new migration
+$ pnpm run migration:generate -- src/database/migrations/MigrationName
+
+# Revert last migration
+$ pnpm run migration:revert
+```
+
 ## Compile and run the project
 
 ```bash
