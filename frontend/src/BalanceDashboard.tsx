@@ -20,14 +20,20 @@ import {
   useBalanceData,
   useCurrentYearByMonth,
   useLastFiveYearsByMonth,
+  useCurrentYearCategorizedByMonth,
 } from "./api/hooks/useBalanceData";
 import { CombinedMonthlyChart } from "./components/charts/CombinedMonthlyChart";
 import { StackedAreaChart } from "./components/charts/StackedAreaChart";
+import { EnergyTreemap } from "./components/charts/EnergyTreemap";
+import { RefreshDataPanel } from "./components/features/RefreshDataPanel";
+import { useQueryClient } from '@tanstack/react-query';
 
 // ============================================================================
 // DASHBOARD COMPONENT
 // ============================================================================
 const Dashboard = () => {
+  const queryClient = useQueryClient();
+  
   // Usamos la utilidad para obtener el rango del año actual
   const { start: yearStart, end: yearEnd } = getCurrentYearRange();
 
@@ -35,6 +41,7 @@ const Dashboard = () => {
 
   const monthlyData = useCurrentYearByMonth(); // Current year by month
   const fiveYearData = useLastFiveYearsByMonth(); // Last 5 years by month
+  const categorizedData = useCurrentYearCategorizedByMonth(); // Categorized data for treemap
   const customData = useBalanceData(customRange.start, customRange.end);
 
   const handleDateChange = (start: string, end: string) => {
@@ -42,6 +49,11 @@ const Dashboard = () => {
   };
 
   const hasCustomRange = !!customRange.start && !!customRange.end;
+  
+  const handleRefreshComplete = () => {
+    // Invalidate all queries to refetch fresh data
+    queryClient.invalidateQueries({ queryKey: ['balance'] });
+  };
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-8">
@@ -201,6 +213,38 @@ const Dashboard = () => {
             )}
           </CardContent>
         </Card>
+
+        <Separator className="my-8" />
+
+        {/* Admin & Analysis Section */}
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold">Administración y Análisis Detallado</h2>
+          
+          {/* Refresh Data Panel */}
+          <RefreshDataPanel onRefreshComplete={handleRefreshComplete} />
+          
+          {/* Energy Treemap - Hierarchical Visualization */}
+          {categorizedData.isLoading ? (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="space-y-3">
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-[500px] w-full" />
+                </div>
+              </CardContent>
+            </Card>
+          ) : categorizedData.isError ? (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>
+                No se pudieron cargar los datos categorizados: {categorizedData.error?.message}
+              </AlertDescription>
+            </Alert>
+          ) : categorizedData.data ? (
+            <EnergyTreemap data={categorizedData.data} />
+          ) : null}
+        </div>
       </div>
 
       <footer className="mt-16 text-center text-sm text-muted-foreground">

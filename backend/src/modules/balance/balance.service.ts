@@ -126,7 +126,16 @@ export class BalanceService {
     const entities = balanceDtos.map((dto) =>
       this.balanceRepository.create(dto),
     );
-    return this.balanceRepository.save(entities);
+    
+    // Use upsert to handle conflicts: update existing records or insert new ones
+    // The unique constraint is on: type + subtype + date
+    const result = await this.balanceRepository.upsert(entities, {
+      conflictPaths: ['type', 'subtype', 'date'], // columns that define uniqueness
+      skipUpdateIfNoValuesChanged: true, // optimization
+    });
+    
+    // Return the saved/updated entities
+    return result.generatedMaps as Balance[];
   }
 
   private _handleRefreshError(error: any) {
@@ -146,21 +155,12 @@ export class BalanceService {
       );
     }
 
-    if (error.code === '23505') {
-      throw new HttpException(
-        {
-          message: 'Duplicate balance entries detected',
-          details:
-            'Some balance records already exist for the given date range',
-        },
-        HttpStatus.CONFLICT,
-      );
-    }
+    // Note: Duplicate handling removed - now using upsert which handles conflicts automatically
     console.log(error);
     throw new HttpException(
       {
         message: 'Error processing balance data',
-        errros: error.message,
+        errors: error.message,
       },
       HttpStatus.INTERNAL_SERVER_ERROR,
     );
@@ -221,6 +221,102 @@ export class BalanceService {
     qb.groupBy(groupByColumns.join(', '));
 
     return qb.getRawMany(); // Returns raw aggregated objects
+  }
+
+  /**
+   * Get balance data categorized by energy type for easier React consumption
+   * Returns: { RENEWABLE: [...], NON_RENEWABLE: [...], STORAGE: [...], DEMAND: [...] }
+   */
+  async findCategorized(query: QueryFilterDto) {
+    const { start_date, end_date, subtype, time_grouping } = query;
+
+    const qb = this.balanceRepository.createQueryBuilder('balance');
+
+    qb.where('balance.date BETWEEN :start_date AND :end_date', {
+      start_date: start_date,
+      end_date: end_date,
+    });
+
+    if (subtype) {
+      qb.andWhere('balance.sub_type = :subtype', { subtype });
+    }
+
+    if (!time_grouping) {
+      qb.orderBy('balance.date', 'ASC').addOrderBy('balance.type', 'ASC');
+      const results = await qb.getMany();
+      
+      // Categorize by type
+      return this._categorizeByType(results);
+    }
+
+    // With time grouping
+    const selectColumns: string[] = [
+      'SUM(balance.value) AS "totalValue"',
+      'balance.type AS "type"',
+      'balance.sub_type AS "subtype"',
+    ];
+    const groupByColumns: string[] = ['balance.type', 'balance.sub_type'];
+
+    if (time_grouping) {
+      const datePart =
+        time_grouping === DataFilterBy.YEAR
+          ? 'EXTRACT(YEAR FROM balance.date)'
+          : "TO_CHAR(balance.date, 'YYYY-MM')";
+
+      selectColumns.push(`${datePart} AS "timeGroup"`);
+      groupByColumns.push(`"timeGroup"`);
+      qb.orderBy(`"timeGroup"`, 'ASC')
+        .addOrderBy('balance.type', 'ASC')
+        .addOrderBy('balance.sub_type', 'ASC');
+    }
+
+    qb.select(selectColumns);
+    qb.groupBy(groupByColumns.join(', '));
+
+    const rawResults = await qb.getRawMany();
+    
+    // Categorize aggregated results by type
+    return this._categorizeRawByType(rawResults);
+  }
+
+  /**
+   * Helper: Categorize entity results by type
+   */
+  private _categorizeByType(results: Balance[]) {
+    const categorized: Record<string, Balance[]> = {
+      RENEWABLE: [],
+      NON_RENEWABLE: [],
+      STORAGE: [],
+      DEMAND: [],
+    };
+
+    results.forEach((item) => {
+      if (categorized[item.type]) {
+        categorized[item.type].push(item);
+      }
+    });
+
+    return categorized;
+  }
+
+  /**
+   * Helper: Categorize raw aggregated results by type
+   */
+  private _categorizeRawByType(results: any[]) {
+    const categorized: Record<string, any[]> = {
+      RENEWABLE: [],
+      NON_RENEWABLE: [],
+      STORAGE: [],
+      DEMAND: [],
+    };
+
+    results.forEach((item) => {
+      if (categorized[item.type]) {
+        categorized[item.type].push(item);
+      }
+    });
+
+    return categorized;
   }
 
   async findOne(id: string) {

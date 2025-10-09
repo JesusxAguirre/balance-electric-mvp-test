@@ -161,3 +161,55 @@ export function useLastFiveYearsByMonth(options?: { type?: EnergyType; subtype?:
   const { start, end } = getLastYearsRange(5);
   return useBalanceData(start, end, { time_grouping: 'month', ...options });
 }
+
+/**
+ * Hook to fetch categorized balance data (grouped by energy type)
+ * Returns: { RENEWABLE: [...], NON_RENEWABLE: [...], STORAGE: [...], DEMAND: [...] }
+ */
+export function useCategorizedBalanceData(
+  startDate: string,
+  endDate: string,
+  opts?: { time_grouping?: DataFilterBy; subtype?: EnergySubtype }
+) {
+  return useQuery({
+    queryKey: ['balance', 'categorized', startDate, endDate, opts],
+    queryFn: async () => {
+      if (!startDate || !endDate) return null;
+
+      const base = API_BASE_URL || '';
+      const endpoint = `${base}/balance/categorized`;
+      
+      const params = new URLSearchParams({
+        start_date: startDate,
+        end_date: endDate,
+      });
+
+      if (opts?.time_grouping) {
+        params.append('time_grouping', opts.time_grouping);
+      }
+      if (opts?.subtype) {
+        params.append('subtype', opts.subtype);
+      }
+
+      const res = await fetch(`${endpoint}?${params.toString()}`);
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`HTTP ${res.status}: ${errorText}`);
+      }
+
+      const data = await res.json();
+      return data;
+    },
+    enabled: !!startDate && !!endDate,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Hook for categorized data of current year by month
+ */
+export function useCurrentYearCategorizedByMonth() {
+  const { start, end } = getCurrentYearRange();
+  return useCategorizedBalanceData(start, end, { time_grouping: 'month' });
+}

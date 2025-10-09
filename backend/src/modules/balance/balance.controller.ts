@@ -24,14 +24,19 @@ export class BalanceController {
     return this.balanceService.refreshData(q.start_date, q.end_date);
   }
 
-  @Get()
-  findAll(@Query() q: QueryFilterDto) {
-    return this.balanceService.findAll(q);
+  @Get('categorized')
+  findCategorized(@Query() q: QueryFilterDto) {
+    return this.balanceService.findCategorized(q);
   }
 
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.balanceService.findOne(id);
+  }
+
+  @Get()
+  findAll(@Query() q: QueryFilterDto) {
+    return this.balanceService.findAll(q);
   }
 
   @Delete(':id')
