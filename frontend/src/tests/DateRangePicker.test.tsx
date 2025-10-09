@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { DateRangePicker } from '../components/features/DateRangePicker';
+import { DateRangePicker } from '../components/DatePicker/DateRangePicker';
+import { describe, expect, it, vi } from 'vitest';
 
 describe('DateRangePicker', () => {
   it('button is disabled when dates are empty', () => {

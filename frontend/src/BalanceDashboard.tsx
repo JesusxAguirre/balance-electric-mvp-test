@@ -13,10 +13,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { AlertCircle, RefreshCw, TrendingUp } from "lucide-react";
-import { BalanceChart } from "./components/features/BalanceChart";
-import { DateRangePicker } from "./components/features/DateRangePicker";
+import { BalanceChart } from "./components/charts/BalanceChart";
+import { DateRangePicker } from "./components/DatePicker/DateRangePicker";
 import {
-  getCurrentYearRange,
   useBalanceData,
   useCurrentYearByMonth,
   useLastFiveYearsByMonth,
@@ -26,7 +25,7 @@ import {
 import { CombinedMonthlyChart } from "./components/charts/CombinedMonthlyChart";
 import { StackedAreaChart } from "./components/charts/StackedAreaChart";
 import { EnergyTreemap } from "./components/charts/EnergyTreemap";
-import { RefreshDataPanel } from "./components/features/RefreshDataPanel";
+import { RefreshDataPanel } from "./components/RefreshData/RefreshDataPanel";
 import { useQueryClient } from '@tanstack/react-query';
 
 // ============================================================================
@@ -35,14 +34,12 @@ import { useQueryClient } from '@tanstack/react-query';
 const Dashboard = () => {
   const queryClient = useQueryClient();
   
-  // Usamos la utilidad para obtener el rango del año actual
-  const { start: yearStart, end: yearEnd } = getCurrentYearRange();
 
   const [customRange, setCustomRange] = useState({ start: "", end: "" });
 
-  const monthlyData = useCurrentYearByMonth(); // Current year by month
-  const fiveYearData = useLastFiveYearsByMonth(); // Last 5 years by month
-  const categorizedData = useCurrentYearCategorizedByMonth(); // Categorized data for treemap
+  const monthlyData = useCurrentYearByMonth(); 
+  const fiveYearData = useLastFiveYearsByMonth(); 
+  const categorizedData = useCurrentYearCategorizedByMonth();
   const customData = useBalanceData(customRange.start, customRange.end);
   const customCategorizedData = useCategorizedBalanceData(
     customRange.start, 
@@ -57,7 +54,6 @@ const Dashboard = () => {
   const hasCustomRange = !!customRange.start && !!customRange.end;
   
   const handleRefreshComplete = () => {
-    // Invalidate all queries to refetch fresh data
     queryClient.invalidateQueries({ queryKey: ['balance'] });
   };
 
@@ -189,7 +185,7 @@ const Dashboard = () => {
                           {customData.error?.message}
                         </code>
                       </p>
-                      {/* useQuery devuelve la función `refetch` */}
+                     
                       <Button
                         onClick={() => customData.refetch()}
                         variant="destructive"
@@ -235,7 +231,6 @@ const Dashboard = () => {
         
         <Separator className="my-8" />
         
-        {/* Subtype Analysis - Uses custom range if provided, otherwise year data */}
         <div className="space-y-6">
           <div>
             <h2 className="text-2xl font-bold">Análisis por Subtipos de Energía</h2>
@@ -247,7 +242,7 @@ const Dashboard = () => {
             </p>
           </div>
           
-          {/* Energy Treemap - Hierarchical Visualization */}
+          {/* Energy Treemap */}
           {hasCustomRange ? (
             // Use custom range categorized data
             customCategorizedData.isLoading ? (

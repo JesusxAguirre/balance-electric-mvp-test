@@ -1,3 +1,5 @@
+//TODO: Remove linter error
+
 export enum EnergyType {
   RENEWABLE = "RENEWABLE",
   NON_RENEWABLE = "NON_RENEWABLE",

@@ -20,7 +20,7 @@ const createWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
-        retry: false, // Disable retry for faster tests
+        retry: false, 
       },
     },
   });
@@ -109,10 +109,7 @@ describe('useBalanceData Hook', () => {
   });
 
   it.skip('handles server error (HTTP 500)', async () => {
-    // NOTE: This test is skipped because React Query error handling with mocked fetch
-    // needs more sophisticated setup. In production, errors are properly caught.
-    // TODO: Implement proper error handling test with MSW (Mock Service Worker)
-    
+   
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 500,

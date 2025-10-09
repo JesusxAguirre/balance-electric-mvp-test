@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { BalanceChart } from '../components/features/BalanceChart';
+import { BalanceChart } from '../components/charts/BalanceChart';
 import { EnergyType, EnergySubtype } from '../types/energy.enums';
+import { describe, it, expect } from 'vitest';
 
 describe('BalanceChart mapping', () => {
   it('renders chart with valid data', () => {

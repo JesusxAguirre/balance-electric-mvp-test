@@ -10,7 +10,9 @@ import './index.css';
 // 2. Create a client instance outside the component tree
 const queryClient = new QueryClient({
   defaultOptions: {
+    
     queries: {
+      retry : 5,
       // Optional: Good default setting for better UX
       staleTime: 5 * 60 * 1000, // 5 minutes
     },
@@ -19,7 +21,6 @@ const queryClient = new QueryClient({
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    {/* 3. Wrap your entire application with QueryClientProvider */}
     <QueryClientProvider client={queryClient}>
       <Dashboard />
     </QueryClientProvider>

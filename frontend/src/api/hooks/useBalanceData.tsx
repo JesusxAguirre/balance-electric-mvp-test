@@ -5,6 +5,7 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 
 const API_BASE_URL = 'http://localhost:3000/api/v1';
 
+//LEER
 /**
  * Custom hook para obtener datos del balance eléctrico usando @tanstack/react-query.
  * @param startDate - Formato YYYY-MM-DD
@@ -22,7 +23,6 @@ export const useBalanceData = (
   }
 ): UseQueryResult<BalanceRecord[], Error> => {
   const fetchBalance = async (): Promise<BalanceRecord[]> => {
-    // Si la fecha de inicio o fin no existe, devuelve un array vacío (la query no se habilitará de todas formas)
     if (!startDate || !endDate) return [];
 
     const base = API_BASE_URL || '';
@@ -30,7 +30,6 @@ export const useBalanceData = (
     
     // Construye parámetros de URL
     const params: BalanceQueryParams = {
-      // Usar formato ISO completo para evitar ambigüedades de zona horaria
       start_date: startDate.includes('T') ? startDate : `${startDate}T00:00:00.000Z`,
       end_date: endDate.includes('T') ? endDate : `${endDate}T23:59:59.999Z`,
       ...(opts?.type && { type: opts.type }),
@@ -51,10 +50,11 @@ export const useBalanceData = (
     const qs = new URLSearchParams(stringParams).toString();
     const url = `${endpoint}?${qs}`;
     
-    // Fetch data
+    // request backend data
     const res = await fetch(url, { 
       headers: { 'Accept': 'application/json' },
       mode: 'cors',
+      
     });
     
     if (!res.ok) {
@@ -67,14 +67,12 @@ export const useBalanceData = (
 
     // --- Data Transformation ---
 
-    // 1. Handle Aggregated Data (BackendAggregatedRow[])
     if (opts?.time_grouping) {
       const rows = raw as BackendAggregatedRow[];
       return rows.map((r) => {
-        // For monthly grouping, backend returns 'YYYY-MM', convert to first day for consistent date handling
         let datetime = r.timeGroup;
         if (opts.time_grouping === 'month' && /^\d{4}-\d{2}$/.test(datetime)) {
-          datetime = `${datetime}-01`; // Add day to make it a valid date
+          datetime = `${datetime}-01`; 
         }
         
         return {
@@ -101,8 +99,8 @@ export const useBalanceData = (
 
       return { 
         datetime: dateIso, 
-        type: item.type as EnergyType,      // <-- Usamos el tipo directo
-        subtype: item.subtype as EnergySubtype, // <-- Usamos el subtipo directo
+        type: item.type as EnergyType,      
+        subtype: item.subtype as EnergySubtype, 
         value: Number(item.value) 
       } as BalanceRecord;
     });
@@ -111,9 +109,7 @@ export const useBalanceData = (
   return useQuery<BalanceRecord[], Error>({
     queryKey: ['balance', startDate, endDate, opts?.type, opts?.subtype, opts?.time_grouping],
     queryFn: fetchBalance,
-    // La query solo se habilita si hay fechas válidas
     enabled: !!startDate && !!endDate, 
-    retry: 1,
     staleTime: 5 * 60 * 1000,
   });
 };
