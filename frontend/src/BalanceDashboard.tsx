@@ -19,7 +19,7 @@ import {
   getCurrentYearRange,
   useBalanceData,
   useCurrentYearByMonth,
-  useCurrentYearByYear,
+  useLastFiveYearsByMonth,
 } from "./api/hooks/useBalanceData";
 import { CombinedMonthlyChart } from "./components/charts/CombinedMonthlyChart";
 import { StackedAreaChart } from "./components/charts/StackedAreaChart";
@@ -33,8 +33,8 @@ const Dashboard = () => {
 
   const [customRange, setCustomRange] = useState({ start: "", end: "" });
 
-  const monthlyData = useCurrentYearByMonth(); // Simplificado
-  const yearlyData = useCurrentYearByYear(); // Simplificado
+  const monthlyData = useCurrentYearByMonth(); // Current year by month
+  const fiveYearData = useLastFiveYearsByMonth(); // Last 5 years by month
   const customData = useBalanceData(customRange.start, customRange.end);
 
   const handleDateChange = (start: string, end: string) => {
@@ -88,8 +88,8 @@ const Dashboard = () => {
             </Card>
           )}
 
-          {/* Yearly Stacked Area Chart */}
-          {yearlyData.isLoading ? (
+          {/* 5-Year Historical Stacked Area Chart */}
+          {fiveYearData.isLoading ? (
             <Card>
               <CardContent className="pt-6">
                 <div className="space-y-3">
@@ -98,16 +98,16 @@ const Dashboard = () => {
                 </div>
               </CardContent>
             </Card>
-          ) : yearlyData.isError ? (
+          ) : fiveYearData.isError ? (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Error</AlertTitle>
               <AlertDescription>
-                No se pudo cargar la serie anual: {yearlyData.error?.message}
+                No se pudo cargar los datos históricos: {fiveYearData.error?.message}
               </AlertDescription>
             </Alert>
-          ) : yearlyData.data && yearlyData.data.length > 0 ? (
-            <StackedAreaChart data={yearlyData.data} />
+          ) : fiveYearData.data && fiveYearData.data.length > 0 ? (
+            <StackedAreaChart data={fiveYearData.data} />
           ) : (
             <Card>
               <CardContent className="flex items-center justify-center h-[300px]">

@@ -134,9 +134,9 @@ export function StackedAreaChart({ data }: StackedAreaChartProps) {
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle>Composición Energética Acumulada</CardTitle>
+            <CardTitle>Composición Energética - Últimos 5 Años</CardTitle>
             <CardDescription>
-              Vista consolidada del año actual
+              Evolución histórica de la distribución energética
             </CardDescription>
           </div>
           <div className="flex items-center gap-2 text-sm">
@@ -209,13 +209,13 @@ export function StackedAreaChart({ data }: StackedAreaChartProps) {
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              minTickGap={32}
+              minTickGap={50}
               tickFormatter={(value) => {
                 const date = new Date(value);
-                return date.toLocaleDateString("es-ES", {
-                  month: "short",
-                  day: "numeric",
-                });
+                // For 5-year view, show year + month (e.g., "ene '21", "feb '21")
+                const month = date.toLocaleDateString("es-ES", { month: "short" });
+                const year = date.getFullYear().toString().slice(-2);
+                return `${month} '${year}`;
               }}
             />
             <ChartTooltip

@@ -70,12 +70,20 @@ export const useBalanceData = (
     // 1. Handle Aggregated Data (BackendAggregatedRow[])
     if (opts?.time_grouping) {
       const rows = raw as BackendAggregatedRow[];
-      return rows.map((r) => ({
-        datetime: r.timeGroup,
-        type: (r.type || opts.type || EnergyType.STORAGE) as EnergyType,
-        subtype: (r.subtype || opts.subtype || EnergySubtype.STORAGE_BALANCE) as EnergySubtype,
-        value: Number(r.totalValue),
-      })) as BalanceRecord[];
+      return rows.map((r) => {
+        // For monthly grouping, backend returns 'YYYY-MM', convert to first day for consistent date handling
+        let datetime = r.timeGroup;
+        if (opts.time_grouping === 'month' && /^\d{4}-\d{2}$/.test(datetime)) {
+          datetime = `${datetime}-01`; // Add day to make it a valid date
+        }
+        
+        return {
+          datetime,
+          type: (r.type || opts.type || EnergyType.STORAGE) as EnergyType,
+          subtype: (r.subtype || opts.subtype || EnergySubtype.STORAGE_BALANCE) as EnergySubtype,
+          value: Number(r.totalValue),
+        };
+      }) as BalanceRecord[];
     }
 
     // 2. Handle Non-Aggregated Data (BackendBalanceEntity[])
@@ -130,4 +138,26 @@ export function useCurrentYearByMonth(options?: { type?: EnergyType; subtype?: E
 export function useCurrentYearByYear(options?: { type?: EnergyType; subtype?: EnergySubtype }) {
   const { start, end } = getCurrentYearRange();
   return useBalanceData(start, end, { time_grouping: 'year', ...options });
+}
+
+/**
+ * Get the date range for the last N years
+ */
+export function getLastYearsRange(years: number = 5): { start: string; end: string } {
+  const now = new Date();
+  const endYear = now.getFullYear();
+  const startYear = endYear - years + 1;
+  
+  const start = `${startYear}-01-01`;
+  const end = `${endYear}-12-31`;
+  
+  return { start, end };
+}
+
+/**
+ * Hook to fetch balance data for the last 5 years grouped by month
+ */
+export function useLastFiveYearsByMonth(options?: { type?: EnergyType; subtype?: EnergySubtype }) {
+  const { start, end } = getLastYearsRange(5);
+  return useBalanceData(start, end, { time_grouping: 'month', ...options });
 }

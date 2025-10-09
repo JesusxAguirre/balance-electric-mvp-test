@@ -142,9 +142,9 @@ export function CombinedMonthlyChart({ data }: CombinedMonthlyChartProps) {
               minTickGap={32}
               tickFormatter={(value) => {
                 const date = new Date(value);
+                // Show only month name (e.g., "ene", "feb", "mar")
                 return date.toLocaleDateString("es-ES", {
                   month: "short",
-                  day: "numeric",
                 });
               }}
             />

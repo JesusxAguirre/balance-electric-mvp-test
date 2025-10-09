@@ -193,11 +193,11 @@ export class BalanceService {
     const selectColumns: string[] = ['SUM(balance.value) AS "totalValue"'];
     const groupByColumns: string[] = [];
 
-    if (type) {
-      selectColumns.push('balance.type AS "type"');
-      groupByColumns.push('balance.type');
-    }
+    // ALWAYS include type when time_grouping is set (to separate energy types in charts)
+    selectColumns.push('balance.type AS "type"');
+    groupByColumns.push('balance.type');
 
+    // Only include subtype if explicitly requested
     if (subtype) {
       selectColumns.push('balance.sub_type AS "subtype"');
       groupByColumns.push('balance.sub_type');
@@ -212,7 +212,8 @@ export class BalanceService {
 
       selectColumns.push(`${datePart} AS "timeGroup"`);
       groupByColumns.push(`"timeGroup"`);
-      qb.orderBy(`"timeGroup"`, 'ASC'); // Order by time group
+      qb.orderBy(`"timeGroup"`, 'ASC'); // Order by time group first
+      qb.addOrderBy('balance.type', 'ASC'); // Then by type for consistent ordering
     }
 
     // Select and Group
