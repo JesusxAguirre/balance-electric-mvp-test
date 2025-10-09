@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 // Importamos solo lo necesario del QueryClient y el hook de useQuery
 import { QueryClient, QueryClientProvider,   } from '@tanstack/react-query';
-import { useBalanceData } from './api/hooks/useBalanceData';
+import { useBalanceData, useCurrentYearByMonth, useCurrentYearByYear } from './api/hooks/useBalanceData';
 import { DateRangePicker } from './components/features/DateRangePicker';
 import { BalanceChart } from './components/features/BalanceChart';
 
@@ -32,6 +32,10 @@ const Dashboard: React.FC = () => {
     dateRange.endDate
   );
 
+  // Default datasets for current year when no date range selected
+  const currentYearByMonth = useCurrentYearByMonth();
+  const currentYearByYear = useCurrentYearByYear();
+
   const handleDateChange = (start: string, end: string) => {
     setDateRange({ startDate: start, endDate: end });
   };
@@ -42,10 +46,32 @@ const Dashboard: React.FC = () => {
 
     if (!isReady) {
       return (
-        <div className="text-center p-12 bg-white rounded-lg shadow-md border border-gray-200">
-          <p className="text-xl text-gray-600">
-            👋 Selecciona un rango de fechas para visualizar el Balance Eléctrico.
-          </p>
+        <div className="space-y-8">
+          <div className="p-6 bg-white rounded-lg shadow-md border border-gray-200">
+            <h3 className="text-lg font-semibold mb-2">Año actual por mes</h3>
+            {currentYearByMonth.isLoading || currentYearByMonth.isFetching ? (
+              <div className="h-72 bg-gray-100 animate-pulse rounded" />
+            ) : currentYearByMonth.isError ? (
+              <p className="text-sm text-red-600">No se pudo cargar la serie mensual.</p>
+            ) : currentYearByMonth.data && currentYearByMonth.data.length > 0 ? (
+              <BalanceChart data={currentYearByMonth.data} />
+            ) : (
+              <p className="text-sm text-gray-500">Sin datos para el año actual.</p>
+            )}
+          </div>
+
+          <div className="p-6 bg-white rounded-lg shadow-md border border-gray-200">
+            <h3 className="text-lg font-semibold mb-2">Año actual agregado</h3>
+            {currentYearByYear.isLoading || currentYearByYear.isFetching ? (
+              <div className="h-72 bg-gray-100 animate-pulse rounded" />
+            ) : currentYearByYear.isError ? (
+              <p className="text-sm text-red-600">No se pudo cargar la serie anual.</p>
+            ) : currentYearByYear.data && currentYearByYear.data.length > 0 ? (
+              <BalanceChart data={currentYearByYear.data} />
+            ) : (
+              <p className="text-sm text-gray-500">Sin datos para el año actual.</p>
+            )}
+          </div>
         </div>
       );
     }
