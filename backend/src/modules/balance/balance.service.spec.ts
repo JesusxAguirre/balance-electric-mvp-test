@@ -19,6 +19,8 @@ describe('BalanceService', () => {
     save: jest.fn(),
     create: jest.fn(),
     remove: jest.fn(),
+    upsert: jest.fn(),
+    createQueryBuilder: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -97,9 +99,24 @@ describe('BalanceService', () => {
 
   describe('findAll', () => {
     it('should return an array of balances', async () => {
+      const query = { 
+        start_date: '2023-01-01', 
+        end_date: '2023-01-31' 
+      };
       const result: Balance[] = [];
-      mockBalanceRepository.find.mockResolvedValue(result);
-      expect(await service.findAll()).toBe(result);
+      
+      mockBalanceRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(result),
+        getRawMany: jest.fn().mockResolvedValue([]),
+      });
+      
+      expect(await service.findAll(query as any)).toEqual(result);
     });
   });
 

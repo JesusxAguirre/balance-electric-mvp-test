@@ -21,6 +21,7 @@ import {
   useCurrentYearByMonth,
   useLastFiveYearsByMonth,
   useCurrentYearCategorizedByMonth,
+  useCategorizedBalanceData,
 } from "./api/hooks/useBalanceData";
 import { CombinedMonthlyChart } from "./components/charts/CombinedMonthlyChart";
 import { StackedAreaChart } from "./components/charts/StackedAreaChart";
@@ -43,6 +44,11 @@ const Dashboard = () => {
   const fiveYearData = useLastFiveYearsByMonth(); // Last 5 years by month
   const categorizedData = useCurrentYearCategorizedByMonth(); // Categorized data for treemap
   const customData = useBalanceData(customRange.start, customRange.end);
+  const customCategorizedData = useCategorizedBalanceData(
+    customRange.start, 
+    customRange.end, 
+    { time_grouping: 'month' }
+  );
 
   const handleDateChange = (start: string, end: string) => {
     setCustomRange({ start, end });
@@ -68,6 +74,17 @@ const Dashboard = () => {
           Visualización histórica de generación y demanda nacional
         </p>
       </header>
+
+
+{/* Admin & Analysis Section */}
+<div className="space-y-6">
+  <h2 className="text-2xl font-bold">Administración y Análisis Detallado</h2>
+  
+  {/* Refresh Data Panel */}
+  <RefreshDataPanel onRefreshComplete={handleRefreshComplete} />
+</div>
+<Separator className="my-8" />
+
 
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Permanent Current Year Charts */}
@@ -214,36 +231,76 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
+       
+        
         <Separator className="my-8" />
-
-        {/* Admin & Analysis Section */}
+        
+        {/* Subtype Analysis - Uses custom range if provided, otherwise year data */}
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold">Administración y Análisis Detallado</h2>
-          
-          {/* Refresh Data Panel */}
-          <RefreshDataPanel onRefreshComplete={handleRefreshComplete} />
+          <div>
+            <h2 className="text-2xl font-bold">Análisis por Subtipos de Energía</h2>
+            <p className="text-muted-foreground mt-1">
+              {hasCustomRange 
+                ? `Mostrando datos desde ${customRange.start} hasta ${customRange.end}` 
+                : "Mostrando datos del año actual"
+              }
+            </p>
+          </div>
           
           {/* Energy Treemap - Hierarchical Visualization */}
-          {categorizedData.isLoading ? (
-            <Card>
-              <CardContent className="pt-6">
-                <div className="space-y-3">
-                  <Skeleton className="h-6 w-3/4" />
-                  <Skeleton className="h-[500px] w-full" />
-                </div>
-              </CardContent>
-            </Card>
-          ) : categorizedData.isError ? (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>
-                No se pudieron cargar los datos categorizados: {categorizedData.error?.message}
-              </AlertDescription>
-            </Alert>
-          ) : categorizedData.data ? (
-            <EnergyTreemap data={categorizedData.data} />
-          ) : null}
+          {hasCustomRange ? (
+            // Use custom range categorized data
+            customCategorizedData.isLoading ? (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="space-y-3">
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-[500px] w-full" />
+                  </div>
+                </CardContent>
+              </Card>
+            ) : customCategorizedData.isError ? (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>
+                  No se pudieron cargar los datos: {customCategorizedData.error?.message}
+                </AlertDescription>
+              </Alert>
+            ) : customCategorizedData.data ? (
+              <EnergyTreemap data={customCategorizedData.data} />
+            ) : (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Sin Datos</AlertTitle>
+                <AlertDescription>
+                  No hay datos disponibles para el rango seleccionado.
+                </AlertDescription>
+              </Alert>
+            )
+          ) : (
+            // Use year data by default
+            categorizedData.isLoading ? (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="space-y-3">
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-[500px] w-full" />
+                  </div>
+                </CardContent>
+              </Card>
+            ) : categorizedData.isError ? (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>
+                  No se pudieron cargar los datos categorizados: {categorizedData.error?.message}
+                </AlertDescription>
+              </Alert>
+            ) : categorizedData.data ? (
+              <EnergyTreemap data={categorizedData.data} />
+            ) : null
+          )}
         </div>
       </div>
 
