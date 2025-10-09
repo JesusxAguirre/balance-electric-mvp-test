@@ -1,19 +1,29 @@
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { BalanceChart } from '../components/features/BalanceChart';
+import { EnergyType, EnergySubtype } from '../types/energy.enums';
 
 describe('BalanceChart mapping', () => {
-  it('aggregates Generacion and Demanda per date', () => {
+  it('renders chart with valid data', () => {
     const data = [
-      { datetime: '2025-10-01', type: 'Generacion', value: 100 },
-      { datetime: '2025-10-01', type: 'Demanda', value: 90 },
-      { datetime: '2025-10-01', type: 'Generacion', value: 50 },
-      { datetime: '2025-10-02', type: 'Demanda', value: 110 },
+      { datetime: '2025-10-01', type: EnergyType.RENEWABLE, subtype: EnergySubtype.SOLAR_PHOTOVOLTAIC, value: 100 },
+      { datetime: '2025-10-01', type: EnergyType.DEMAND, subtype: EnergySubtype.BC_DEMAND, value: 90 },
+      { datetime: '2025-10-02', type: EnergyType.RENEWABLE, subtype: EnergySubtype.WIND, value: 50 },
+      { datetime: '2025-10-02', type: EnergyType.DEMAND, subtype: EnergySubtype.BC_DEMAND, value: 110 },
     ];
-    render(<BalanceChart data={data as any} />);
-    // Smoke check: renders legend labels
-    expect(screen.getByText(/Generación/i)).toBeInTheDocument();
-    expect(screen.getByText(/Demanda/i)).toBeInTheDocument();
+    
+    const { container } = render(<BalanceChart data={data} />);
+    
+    // Check that the card renders
+    expect(container.querySelector('[data-slot="card"]')).toBeInTheDocument();
+    
+    // Check that it's not showing the empty state
+    expect(screen.queryByText(/No hay datos/i)).not.toBeInTheDocument();
+  });
+  
+  it('shows empty state when no data', () => {
+    render(<BalanceChart data={[]} />);
+    expect(screen.getByText(/No hay datos de energía para mostrar/i)).toBeInTheDocument();
   });
 });
 

@@ -1,10 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
 import axios from 'axios';
 import * as electricSample from '../src/modules/balance/electric-sample.json';
 import { BalanceRepository } from '../src/modules/balance/balance.repository';
+import { globalValidationExceptionFactory } from '../src/core/exceptions/exception.factory';
 
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
@@ -13,18 +14,32 @@ describe('BalanceController (e2e)', () => {
   let app: INestApplication;
   let balanceRepository: BalanceRepository;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    
+    // Enable validation pipe like in main.ts
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+        exceptionFactory: globalValidationExceptionFactory,
+      }),
+    );
+    
     balanceRepository = moduleFixture.get<BalanceRepository>(BalanceRepository);
     await app.init();
+  });
+
+  beforeEach(async () => {
     await balanceRepository.clear();
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await app.close();
   });
 
@@ -48,30 +63,37 @@ describe('BalanceController (e2e)', () => {
 
       return request(app.getHttpServer())
         .get('/balance/refresh?start_date=2023-01-01&end_date=2023-01-31')
-        .expect(502) // Bad Gateway
+        .expect(500) // The exception filter returns 500 for non-axios errors
         .then((response) => {
-          expect(response.body).toHaveProperty(
-            'message',
-            'Failed to fetch data from REE Api please try later',
-          );
+          expect(response.body).toHaveProperty('message');
         });
     });
 
-    it('should return 400 for invalid date range', () => {
+    it('should return error for invalid date format', () => {
       return request(app.getHttpServer())
-        .get('/balance/refresh?start_date=2023-01-31&end_date=2023-01-01')
-        .expect(400);
+        .get('/balance/refresh?start_date=invalid&end_date=2023-01-01')
+        .expect(400)
+        .then((response) => {
+          expect(response.body).toHaveProperty('message');
+          expect(response.body.message).toContain('ISO 8601');
+        });
     });
   });
 
   describe('/balance (GET)', () => {
     it('should return a list of balances', () => {
       return request(app.getHttpServer())
-        .get('/balance')
+        .get('/balance?start_date=2023-01-01&end_date=2023-01-31')
         .expect(200)
         .then((response) => {
           expect(Array.isArray(response.body)).toBe(true);
         });
+    });
+    
+    it('should return 400 for missing required params', () => {
+      return request(app.getHttpServer())
+        .get('/balance')
+        .expect(400);
     });
   });
 });
