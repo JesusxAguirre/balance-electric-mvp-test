@@ -1,4 +1,4 @@
-# 🚀 Balance Eléctrico - Backend
+# 🚀 Balance Electric - Backend
 
 API RESTful para la gestión y consulta de datos del balance eléctrico nacional de España (datos de REE - Red Eléctrica de España).
 
