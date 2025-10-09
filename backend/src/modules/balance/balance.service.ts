@@ -110,6 +110,7 @@ export class BalanceService {
     }
 
     if (validationErrors.length > 0) {
+      console.log('Validation errors:', validationErrors);
       throw new BadRequestException({
         message: 'Validation failed for one or more balance entries',
         errors: formatValidationErrors(validationErrors),
@@ -155,11 +156,11 @@ export class BalanceService {
         HttpStatus.CONFLICT,
       );
     }
-
+    console.log(error);
     throw new HttpException(
       {
         message: 'Error processing balance data',
-        details: error.message,
+        errros: error.message,
       },
       HttpStatus.INTERNAL_SERVER_ERROR,
     );

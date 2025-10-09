@@ -1,172 +1,233 @@
-import React, { useState, useMemo } from 'react';
-// Importamos solo lo necesario del QueryClient y el hook de useQuery
-import { QueryClient, QueryClientProvider,   } from '@tanstack/react-query';
-import { useBalanceData, useCurrentYearByMonth, useCurrentYearByYear } from './api/hooks/useBalanceData';
-import { DateRangePicker } from './components/features/DateRangePicker';
+// Dashboard.tsx
+
+import { useState } from 'react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from "@/components/ui/button"
+import { Separator } from '@/components/ui/separator';
+import { AlertCircle, RefreshCw, TrendingUp, Calendar } from 'lucide-react';
 import { BalanceChart } from './components/features/BalanceChart';
-
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1, // Intentar hasta 3 veces en caso de fallo
-    },
-  },
-});
+import { DateRangePicker } from './components/features/DateRangePicker';
+import { getCurrentYearRange, useBalanceData, useCurrentYearByMonth, useCurrentYearByYear } from './api/hooks/useBalanceData';
 
 
 
-// =========================================================================================
-// COMPONENTE PRINCIPAL (Orquestador: Fase 2.3)
-// =========================================================================================
-const Dashboard: React.FC = () => {
-  const [dateRange, setDateRange] = useState<{ startDate: string, endDate: string }>({ 
-    startDate: '', 
-    endDate: '' 
-  });
-  
-  // Tipado del resultado de la consulta
-  const { data, isLoading, isError, error, refetch, isFetching } = useBalanceData(
-    dateRange.startDate, 
-    dateRange.endDate
-  );
+// ============================================================================
+// DASHBOARD COMPONENT
+// ============================================================================
+const Dashboard = () => {
+  // Usamos la utilidad para obtener el rango del año actual
+  const { start: yearStart, end: yearEnd } = getCurrentYearRange();
 
-  // Default datasets for current year when no date range selected
-  const currentYearByMonth = useCurrentYearByMonth();
-  const currentYearByYear = useCurrentYearByYear();
+  const [customRange, setCustomRange] = useState({ start: '', end: '' });
+
+  const monthlyData = useCurrentYearByMonth(); // Simplificado
+  const yearlyData = useCurrentYearByYear();   // Simplificado
+
+  const customData = useBalanceData(customRange.start, customRange.end); 
 
   const handleDateChange = (start: string, end: string) => {
-    setDateRange({ startDate: start, endDate: end });
+    setCustomRange({ start, end });
   };
-  
-  // Lógica de Renderizado Condicional
-  const content = useMemo(() => {
-    const isReady = !!dateRange.startDate && !!dateRange.endDate;
 
-    if (!isReady) {
-      return (
-        <div className="space-y-8">
-          <div className="p-6 bg-white rounded-lg shadow-md border border-gray-200">
-            <h3 className="text-lg font-semibold mb-2">Año actual por mes</h3>
-            {currentYearByMonth.isLoading || currentYearByMonth.isFetching ? (
-              <div className="h-72 bg-gray-100 animate-pulse rounded" />
-            ) : currentYearByMonth.isError ? (
-              <p className="text-sm text-red-600">No se pudo cargar la serie mensual.</p>
-            ) : currentYearByMonth.data && currentYearByMonth.data.length > 0 ? (
-              <BalanceChart data={currentYearByMonth.data} />
-            ) : (
-              <p className="text-sm text-gray-500">Sin datos para el año actual.</p>
-            )}
-          </div>
-
-          <div className="p-6 bg-white rounded-lg shadow-md border border-gray-200">
-            <h3 className="text-lg font-semibold mb-2">Año actual agregado</h3>
-            {currentYearByYear.isLoading || currentYearByYear.isFetching ? (
-              <div className="h-72 bg-gray-100 animate-pulse rounded" />
-            ) : currentYearByYear.isError ? (
-              <p className="text-sm text-red-600">No se pudo cargar la serie anual.</p>
-            ) : currentYearByYear.data && currentYearByYear.data.length > 0 ? (
-              <BalanceChart data={currentYearByYear.data} />
-            ) : (
-              <p className="text-sm text-gray-500">Sin datos para el año actual.</p>
-            )}
-          </div>
-        </div>
-      );
-    }
-    
-    // 3.1 Manejo de Estado Loading/Fetching
-    if (isLoading || isFetching) {
-      return (
-        <div className="p-8 bg-white rounded-lg shadow-md border border-gray-200">
-          <div className="animate-pulse">
-            <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
-            <div className="h-4 bg-gray-100 rounded w-1/2 mb-4"></div>
-            <div className="h-72 bg-gray-100 rounded-md"></div>
-          </div>
-          <p className="mt-6 text-center text-sky-600 font-medium">Obteniendo datos del backend...</p>
-        </div>
-      );
-    }
-
-    // 3.2 Manejo de Estado Error
-    if (isError) {
-      return (
-        <div className="p-6 bg-red-50 border border-red-200 text-red-800 rounded-lg shadow-md">
-          <h4 className="font-bold text-lg mb-2 flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 mr-2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.023 3.377 1.868 3.377h14.464c1.845 0 2.734-1.877 1.868-3.377l-7.232-12.551c-.866-1.5-3.044-1.5-3.91 0L3.697 16.376z" />
-            </svg>
-            Error de Conexión o Datos
-          </h4>
-          <p className="mb-4 text-sm">
-            Mensaje: <span className="font-mono bg-red-100 p-1 rounded">{error.message || 'Error desconocido.'}</span>
-            <br />
-            Por favor, verifica que el servicio de NestJS esté activo y la conexión a la base de datos sea correcta.
-          </p>
-          <button
-            onClick={() => refetch()}
-            className="h-9 px-4 bg-red-600 text-white font-medium rounded-md shadow-sm transition-colors hover:bg-red-700 text-sm"
-          >
-            Reintentar Consulta
-          </button>
-        </div>
-      );
-    }
-
-    // 3.3 Manejo de Estado Success (Visualización)
-    if (data && data.length > 0) {
-      // Pasamos los datos tipificados al componente Chart
-      return <BalanceChart data={data} />;
-    }
-    
-    // Caso de éxito sin datos
-    return (
-        <div className="text-center p-12 bg-white rounded-lg shadow-md border border-gray-200">
-            <p className="text-xl text-gray-600">
-                🔎 No se encontraron registros de balance eléctrico para el rango seleccionado.
-            </p>
-        </div>
-    );
-  }, [isLoading, isFetching, isError, error, data, dateRange]);
-
+  const hasCustomRange = !!customRange.start && !!customRange.end;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-8 font-sans">
-      
-      {/* Header (Estilo Clean) */}
-      <header className="mb-10 text-center">
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 tracking-tight">
-          Panel de Balance Eléctrico
-        </h1>
-        <p className="mt-2 text-md text-gray-500 font-light">
-          Visualización histórica de generación y demanda nacional.
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-8">
+      <header className="mb-8 text-center">
+        {/* ... (Header content remains the same) ... */}
+        <div className="inline-flex items-center gap-3 mb-2">
+          <TrendingUp className="w-8 h-8 text-sky-600" />
+          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 tracking-tight">
+            Panel de Balance Eléctrico
+          </h1>
+        </div>
+        <p className="mt-2 text-lg text-gray-600 font-light">
+          Visualización histórica de generación y demanda nacional
         </p>
       </header>
 
-      {/* Selector de Fechas (Componente interno) */}
-      <DateRangePicker onDateChange={handleDateChange} />
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Permanent Current Year Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Monthly Chart */}
+          <Card className="shadow-lg">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-sky-600" />
+                    Año Actual por Mes
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    Distribución mensual del balance eléctrico
+                  </CardDescription>
+                </div>
+                {/* Nota: useQuery no tiene `isLoading` o `isError` dentro del estado devuelto, 
+                   sino que son propiedades directas. */}
+                {monthlyData.isLoading && (
+                  <RefreshCw className="w-4 h-4 animate-spin text-sky-600" />
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {monthlyData.isLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-64 w-full" />
+                </div>
+              ) : monthlyData.isError ? (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>
+                    {/* useQuery usa `error` directamente */}
+                    No se pudo cargar la serie mensual: {monthlyData.error?.message}
+                  </AlertDescription>
+                </Alert>
+              ) : monthlyData.data && monthlyData.data.length > 0 ? (
+                <BalanceChart data={monthlyData.data} />
+              ) : (
+                <div className="h-64 flex items-center justify-center text-gray-500">
+                  Sin datos disponibles
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-      {/* Contenedor Principal del Contenido (Gráfico/Estados) */}
-      <main className="max-w-6xl mx-auto p-4">
-        {content}
-      </main>
-      
-      {/* Footer */}
-      <footer className="mt-12 text-center text-xs text-gray-400">
-        <p>Desarrollado con React, TypeScript y Shadcn/ui (simulado con Tailwind CSS).</p>
+          {/* Yearly Chart (Similar structure fix applied) */}
+          <Card className="shadow-lg">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-green-600" />
+                    Año Actual Agregado
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    Total anual consolidado
+                  </CardDescription>
+                </div>
+                {yearlyData.isLoading && (
+                  <RefreshCw className="w-4 h-4 animate-spin text-green-600" />
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {yearlyData.isLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-64 w-full" />
+                </div>
+              ) : yearlyData.isError ? (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>
+                    No se pudo cargar la serie anual: {yearlyData.error?.message}
+                  </AlertDescription>
+                </Alert>
+              ) : yearlyData.data && yearlyData.data.length > 0 ? (
+                <BalanceChart data={yearlyData.data} />
+              ) : (
+                <div className="h-64 flex items-center justify-center text-gray-500">
+                  Sin datos disponibles
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <Separator className="my-8" />
+
+        {/* Custom Date Range Section */}
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-2xl">Consulta Personalizada</CardTitle>
+            <CardDescription>
+              Selecciona un rango de fechas específico para analizar el balance eléctrico
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <DateRangePicker onDateChange={handleDateChange} />
+
+            {hasCustomRange && (
+              <div className="mt-6">
+                {customData.isLoading ? (
+                  <Card className="border-sky-200 bg-sky-50/50">
+                    <CardContent className="pt-6">
+                      <div className="space-y-4">
+                        <Skeleton className="h-6 w-1/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-80 w-full" />
+                      </div>
+                      <div className="flex items-center justify-center mt-4 gap-2 text-sky-600">
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span className="font-medium">Obteniendo datos...</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : customData.isError ? (
+                  <Alert variant="destructive" className="border-2">
+                    <AlertCircle className="h-5 w-5" />
+                    <AlertTitle className="text-lg font-semibold">Error de Conexión</AlertTitle>
+                    <AlertDescription className="mt-2 space-y-3">
+                      <p className="text-sm">
+                        <span className="font-semibold">Mensaje:</span>{' '}
+                        <code className="bg-red-100 px-2 py-1 rounded text-xs">
+                          {customData.error?.message}
+                        </code>
+                      </p>
+                      {/* useQuery devuelve la función `refetch` */}
+                      <Button
+                        onClick={() => customData.refetch()}
+                        variant="destructive"
+                        size="sm"
+                        className="mt-2"
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Reintentar
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                ) : customData.data && customData.data.length > 0 ? (
+                  <Card className="border-green-200 bg-green-50/30">
+                    <CardHeader>
+                      <CardTitle className="text-lg text-green-900">
+                        Resultados del Rango Personalizado
+                      </CardTitle>
+                      <CardDescription>
+                        {customRange.start} hasta {customRange.end}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <BalanceChart data={customData.data} />
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Alert className="border-amber-300 bg-amber-50">
+                    <AlertCircle className="h-4 w-4 text-amber-600" />
+                    <AlertTitle className="text-amber-900">Sin Datos</AlertTitle>
+                    <AlertDescription className="text-amber-800">
+                      No se encontraron registros para el rango seleccionado.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <footer className="mt-16 text-center text-sm text-gray-500">
+        <p>Desarrollado con React, TypeScript y Shadcn/ui</p>
+        <p className="text-xs mt-1 text-gray-400">
+          © {new Date().getFullYear()} Panel de Balance Eléctrico
+        </p>
       </footer>
     </div>
   );
 };
 
-
-
-const App: React.FC = () => (
-  <QueryClientProvider client={queryClient}>
-    <Dashboard />
-  </QueryClientProvider>
-);
-
-export default App;
+export default Dashboard;

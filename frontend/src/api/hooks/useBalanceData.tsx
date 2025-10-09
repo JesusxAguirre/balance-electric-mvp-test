@@ -1,21 +1,15 @@
+// hooks/useBalanceData.ts
+
+import { EnergySubtype, EnergyType, type BackendAggregatedRow, type BackendBalanceEntity, type BackendBalanceResponse, type BalanceQueryParams, type BalanceRecord, type DataFilterBy } from '@/types/energy.enums';
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
-import type {
-  BackendBalanceResponse,
-  BalanceRecord,
-  BalanceQueryParams,
-  BackendAggregatedRow,
-  BackendBalanceEntity,
-  DataFilterBy,
-  EnergyType,
-  EnergySubtype,
-} from '../../types/balance';
 
 const API_BASE_URL = 'http://localhost:3000/api/v1';
 
 /**
- * Custom hook para obtener datos del balance eléctrico.
+ * Custom hook para obtener datos del balance eléctrico usando @tanstack/react-query.
  * @param startDate - Formato YYYY-MM-DD
  * @param endDate - Formato YYYY-MM-DD
+ * @param opts - Opciones de filtrado (type, subtype, time_grouping)
  * @returns UseQueryResult<BalanceRecord[], Error>
  */
 export const useBalanceData = (
@@ -28,25 +22,27 @@ export const useBalanceData = (
   }
 ): UseQueryResult<BalanceRecord[], Error> => {
   const fetchBalance = async (): Promise<BalanceRecord[]> => {
+    // Si la fecha de inicio o fin no existe, devuelve un array vacío (la query no se habilitará de todas formas)
     if (!startDate || !endDate) return [];
-
 
     const base = API_BASE_URL || '';
     const endpoint = `${base}/balance`;
     
-    // Ensure dates are in correct format with time
+    // Construye parámetros de URL
     const params: BalanceQueryParams = {
-      start_date: startDate.includes('T') ? startDate : `${startDate}T00:00`,
-      end_date: endDate.includes('T') ? endDate : `${endDate}T23:59`,
-      ...(opts?.type ? { type: opts.type } : {}),
-      ...(opts?.subtype ? { subtype: opts.subtype } : {}),
-      ...(opts?.time_grouping ? { time_grouping: opts.time_grouping } : {}),
+      // Usar formato ISO completo para evitar ambigüedades de zona horaria
+      start_date: startDate.includes('T') ? startDate : `${startDate}T00:00:00.000Z`,
+      end_date: endDate.includes('T') ? endDate : `${endDate}T23:59:59.999Z`,
+      ...(opts?.type && { type: opts.type }),
+      ...(opts?.subtype && { subtype: opts.subtype }),
+      ...(opts?.time_grouping && { time_grouping: opts.time_grouping }),
     };
 
     const stringParams: Record<string, string> = Object.entries(params).reduce(
       (acc, [key, val]) => {
-        if (val === undefined || val === null) return acc;
-        acc[key] = String(val);
+        if (val !== undefined && val !== null) {
+          acc[key] = String(val);
+        }
         return acc;
       },
       {} as Record<string, string>
@@ -55,11 +51,10 @@ export const useBalanceData = (
     const qs = new URLSearchParams(stringParams).toString();
     const url = `${endpoint}?${qs}`;
     
-    console.log('Fetching from:', url); // Debug log
-    
+    // Fetch data
     const res = await fetch(url, { 
       headers: { 'Accept': 'application/json' },
-      mode: 'cors', // Add CORS mode
+      mode: 'cors',
     });
     
     if (!res.ok) {
@@ -69,19 +64,21 @@ export const useBalanceData = (
     }
     
     const raw: BackendBalanceResponse = await res.json();
-    console.log('API Response:', raw); // Debug log
 
-    // If time_grouping is provided, backend returns aggregated rows
+    // --- Data Transformation ---
+
+    // 1. Handle Aggregated Data (BackendAggregatedRow[])
     if (opts?.time_grouping) {
       const rows = raw as BackendAggregatedRow[];
       return rows.map((r) => ({
         datetime: r.timeGroup,
-        type: (r.type === 'DEMAND' ? 'Demanda' : 'Generacion') as 'Generacion' | 'Demanda',
+        type: (r.type || opts.type || EnergyType.STORAGE) as EnergyType,
+        subtype: (r.subtype || opts.subtype || EnergySubtype.STORAGE_BALANCE) as EnergySubtype,
         value: Number(r.totalValue),
-      }));
+      })) as BalanceRecord[];
     }
 
-    // Handle the actual backend response structure
+    // 2. Handle Non-Aggregated Data (BackendBalanceEntity[])
     const entities = raw as BackendBalanceEntity[];
     
     if (!Array.isArray(entities)) {
@@ -90,39 +87,33 @@ export const useBalanceData = (
     }
 
     return entities.map((item) => {
-      // The date field is already a string in YYYY-MM-DD format
       const dateIso = typeof item.date === 'string' 
-        ? item.date 
+        ? item.date.split('T')[0]
         : new Date(item.date).toISOString().split('T')[0];
-      
-      // Map backend types to frontend types
-      // Adjust this mapping based on your actual backend types
-      let type: 'Generacion' | 'Demanda';
-      if (item.type === 'DEMAND') {
-        type = 'Demanda';
-      } else {
-        // RENEWABLE, FOSSIL, NUCLEAR, etc. -> Generacion
-        type = 'Generacion';
-      }
-      
+
       return { 
         datetime: dateIso, 
-        type: type, 
+        type: item.type as EnergyType,      // <-- Usamos el tipo directo
+        subtype: item.subtype as EnergySubtype, // <-- Usamos el subtipo directo
         value: Number(item.value) 
-      };
+      } as BalanceRecord;
     });
   };
   
   return useQuery<BalanceRecord[], Error>({
     queryKey: ['balance', startDate, endDate, opts?.type, opts?.subtype, opts?.time_grouping],
     queryFn: fetchBalance,
-    enabled: !!startDate && !!endDate,
-    retry: 1, // Retry only once on failure
-    staleTime: 5 * 60 * 1000, // Data is fresh for 5 minutes
+    // La query solo se habilita si hay fechas válidas
+    enabled: !!startDate && !!endDate, 
+    retry: 1,
+    staleTime: 5 * 60 * 1000,
   });
 };
 
-// Default helpers for current year
+// ============================================================================
+// HELPERS PARA EL DASHBOARD
+// ============================================================================
+
 export function getCurrentYearRange(): { start: string; end: string } {
   const now = new Date();
   const year = now.getFullYear();

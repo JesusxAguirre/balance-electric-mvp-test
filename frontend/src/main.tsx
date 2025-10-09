@@ -1,10 +1,27 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './BalanceDashboard' // <--- CAMBIO AQUÍ
+// Example: src/main.tsx or src/App.tsx
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+// 1. Import the necessary components
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import Dashboard from './BalanceDashboard';
+import './index.css';
+
+// 2. Create a client instance outside the component tree
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Optional: Good default setting for better UX
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    {/* 3. Wrap your entire application with QueryClientProvider */}
+    <QueryClientProvider client={queryClient}>
+      <Dashboard />
+    </QueryClientProvider>
+  </React.StrictMode>,
+);

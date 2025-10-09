@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import App from '../BalanceDashboard';
+import App from '../App';
 
 vi.mock('../api/hooks/useBalanceData', () => {
   return {

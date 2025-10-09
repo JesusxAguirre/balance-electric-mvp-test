@@ -31,6 +31,7 @@ export enum EnergySubtype {
   DIESEL_ENGINE = 'DIESEL_ENGINE',
   GAS_TURBINE = 'GAS_TURBINE',
   STEAM_TURBINE = 'STEAM_TURBINE',
+  FUEL_GAS = 'FUEL_GAS',
   COGENERATION = 'COGENERATION',
   NON_RENEWABLE_WASTE = 'NON_RENEWABLE_WASTE',
   NON_RENEWABLE_GENERATION = 'NON_RENEWABLE_GENERATION',
@@ -39,6 +40,8 @@ export enum EnergySubtype {
   PUMPING_TURBINE = 'PUMPING_TURBINE',
   PUMPING_CONSUMPTION = 'PUMPING_CONSUMPTION',
   STORAGE_BALANCE = 'STORAGE_BALANCE',
+  BATTERY_CHARGE = 'BATTERY_CHARGE',
+  BATTERY_DELIVERY = 'BATERY_DELIVERY',
 
   // Demand subtypes
   INTERNATIONAL_BALANCE = 'INTERNATIONAL_BALANCE',
@@ -75,6 +78,7 @@ export const EnergySubtypeDisplayNames: Record<EnergySubtype, string> = {
   [EnergySubtype.DIESEL_ENGINE]: 'Motores diésel',
   [EnergySubtype.GAS_TURBINE]: 'Turbina de gas',
   [EnergySubtype.STEAM_TURBINE]: 'Turbina de vapor',
+  [EnergySubtype.FUEL_GAS]: 'Fuel + Gas',
   [EnergySubtype.COGENERATION]: 'Cogeneración',
   [EnergySubtype.NON_RENEWABLE_WASTE]: 'Residuos no renovables',
   [EnergySubtype.NON_RENEWABLE_GENERATION]: 'Generación no renovable',
@@ -82,6 +86,9 @@ export const EnergySubtypeDisplayNames: Record<EnergySubtype, string> = {
   //Storage
   [EnergySubtype.PUMPING_TURBINE]: 'Turbinación bombeo',
   [EnergySubtype.PUMPING_CONSUMPTION]: 'Consumo bombeo',
+  [EnergySubtype.BATTERY_DELIVERY]: 'Entrega batería',
+  [EnergySubtype.BATTERY_CHARGE]: 'Carga batería',
+
   [EnergySubtype.STORAGE_BALANCE]: 'Saldo almacenamiento',
 
   //Demand
@@ -154,6 +161,7 @@ export const EnergyTypeSubtypeMapping: Record<EnergyType, EnergySubtype[]> = {
     EnergySubtype.DIESEL_ENGINE,
     EnergySubtype.GAS_TURBINE,
     EnergySubtype.STEAM_TURBINE,
+    EnergySubtype.FUEL_GAS,
     EnergySubtype.COGENERATION,
     EnergySubtype.NON_RENEWABLE_WASTE,
     EnergySubtype.NON_RENEWABLE_GENERATION,
@@ -162,6 +170,8 @@ export const EnergyTypeSubtypeMapping: Record<EnergyType, EnergySubtype[]> = {
     EnergySubtype.PUMPING_TURBINE,
     EnergySubtype.PUMPING_CONSUMPTION,
     EnergySubtype.STORAGE_BALANCE,
+    EnergySubtype.BATTERY_CHARGE,
+    EnergySubtype.BATTERY_DELIVERY,
   ],
   [EnergyType.DEMAND]: [
     EnergySubtype.INTERNATIONAL_BALANCE,
