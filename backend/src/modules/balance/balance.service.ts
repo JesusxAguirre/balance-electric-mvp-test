@@ -15,6 +15,8 @@ import { env } from 'src/config/env';
 import { ElectricBalanceApiResponseDto } from './dto/api-response.dto';
 import { formatValidationErrors } from 'src/utils/utils';
 import { Balance } from './entities/balance.entity';
+import { DataFilterBy, QueryFilterDto } from './dto/get-balance.dto';
+import { time } from 'console';
 
 @Injectable()
 export class BalanceService {
@@ -163,8 +165,60 @@ export class BalanceService {
     );
   }
 
-  findAll() {
-    return this.balanceRepository.find();
+  // NEW REUSABLE DATA FETCHING METHOD
+  async findAll(query: QueryFilterDto) {
+    const { start_date, end_date, type, subtype, time_grouping } = query;
+
+    const qb = this.balanceRepository.createQueryBuilder('balance');
+
+    qb.where('balance.date BETWEEN :start_date AND :end_date', {
+      start_date: start_date,
+      end_date: end_date,
+    });
+
+    if (type) {
+      qb.andWhere('balance.type = :type', { type });
+    }
+
+    if (subtype) {
+      qb.andWhere('balance.sub_type = :subtype', { subtype });
+    }
+
+    if (!time_grouping) {
+      qb.orderBy('balance.date', 'ASC');
+      return qb.getMany();
+    }
+
+    const selectColumns: string[] = ['SUM(balance.value) AS "totalValue"'];
+    const groupByColumns: string[] = [];
+
+    if (type) {
+      selectColumns.push('balance.type AS "type"');
+      groupByColumns.push('balance.type');
+    }
+
+    if (subtype) {
+      selectColumns.push('balance.sub_type AS "subtype"');
+      groupByColumns.push('balance.sub_type');
+    }
+
+    // Group by Time (Year/Month)
+    if (time_grouping) {
+      const datePart =
+        time_grouping === DataFilterBy.YEAR
+          ? 'EXTRACT(YEAR FROM balance.date)'
+          : "TO_CHAR(balance.date, 'YYYY-MM')"; // Use YYYY-MM for proper month grouping/sorting
+
+      selectColumns.push(`${datePart} AS "timeGroup"`);
+      groupByColumns.push(`"timeGroup"`);
+      qb.orderBy(`"timeGroup"`, 'ASC'); // Order by time group
+    }
+
+    // Select and Group
+    qb.select(selectColumns);
+    qb.groupBy(groupByColumns.join(', '));
+
+    return qb.getRawMany(); // Returns raw aggregated objects
   }
 
   async findOne(id: string) {

@@ -13,6 +13,7 @@ import { BalanceService } from './balance.service';
 import { CreateBalanceDto } from './dto/create-balance.dto';
 import { UpdateBalanceDto } from './dto/update-balance.dto';
 import { GetRefreshDto } from './dto/get-refresh.dto';
+import { QueryFilterDto } from './dto/get-balance.dto';
 
 @Controller('balance')
 export class BalanceController {
@@ -24,8 +25,8 @@ export class BalanceController {
   }
 
   @Get()
-  findAll() {
-    return this.balanceService.findAll();
+  findAll(@Query() q: QueryFilterDto) {
+    return this.balanceService.findAll(q);
   }
 
   @Get(':id')
